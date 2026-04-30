@@ -4,48 +4,33 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-/**
- * CTA section — centered card with gradient border.
- */
 export default function CTASection() {
   return (
-    <section className="relative z-10 w-full max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
+    <section className="w-full max-w-[960px] mx-auto px-6 pt-8 pb-24 sm:pb-32">
+      {/* CTA Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 12 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.5 }}
-        className="max-w-xl mx-auto"
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        className="max-w-[480px] mx-auto bg-[#141414] border border-[#1d1d1f] rounded-3xl p-8 sm:p-10 text-center"
       >
-        {/* Card */}
-        <div className="relative rounded-3xl overflow-hidden">
-          {/* Gradient border glow */}
-          <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-white/[0.1] via-transparent to-white/[0.05]" />
-
-          <div className="relative rounded-3xl bg-[var(--aeon-surface)] p-8 sm:p-10 md:p-12 text-center">
-            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--aeon-text-primary)] mb-3">
-              Tu inteligencia, tu servidor
-            </h3>
-            <p className="text-sm text-[var(--aeon-text-secondary)] mb-8 max-w-sm mx-auto leading-relaxed tracking-wide font-light">
-              Comienza a interactuar con Aeon IA. La plataforma está lista para
-              conectarse con tu infraestructura cuando lo decidas.
-            </p>
-            <Link href="/chat">
-              <motion.button
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.97 }}
-                className="inline-flex items-center gap-2.5 px-7 py-3 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.15] hover:border-white/[0.25] rounded-xl transition-all duration-200 cursor-pointer"
-              >
-                Abrir Chat
-                <ArrowRight className="w-4 h-4" />
-              </motion.button>
-            </Link>
-          </div>
-        </div>
+        <h3 className="text-[22px] font-semibold text-white tracking-tight mb-3">
+          Tu inteligencia, tu servidor
+        </h3>
+        <p className="text-[14px] text-[#8e8e93] mb-8 max-w-[360px] mx-auto leading-[1.5]">
+          Comienza a interactuar con Aeon IA. La plataforma está lista para conectarse con tu infraestructura.
+        </p>
+        <Link href="/chat">
+          <button className="inline-flex items-center gap-2 px-6 py-3 text-[14px] font-medium text-white bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-[#3a3a3c] hover:border-[#48484a] rounded-xl transition-all duration-200 cursor-pointer">
+            Abrir Chat
+            <ArrowRight size={15} />
+          </button>
+        </Link>
       </motion.div>
 
       {/* Footer */}
-      <p className="mt-16 text-center text-[11px] text-[var(--aeon-text-muted)] tracking-[0.15em] uppercase">
+      <p className="mt-14 text-center text-[11px] text-[#3a3a3c] tracking-[0.12em] uppercase">
         Aeon IA — Inteligencia Soberana
       </p>
     </section>

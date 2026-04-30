@@ -11,10 +11,6 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-/**
- * Chat input — raw form, no wrapper containers.
- * Parent provides the centered container and padding.
- */
 export default function ChatInput({
   onSend,
   onStop,
@@ -22,70 +18,61 @@ export default function ChatInput({
   disabled = false,
 }: ChatInputProps) {
   const [value, setValue] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
 
-  const handleSend = useCallback(() => {
-    if (!value.trim() || disabled) return;
-    onSend(value.trim());
+  const send = useCallback(() => {
+    const v = value.trim();
+    if (!v || disabled) return;
+    onSend(v);
     setValue("");
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    if (ref.current) ref.current.style.height = "auto";
   }, [value, disabled, onSend]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      if (!isStreaming) handleSend();
+      if (!isStreaming) send();
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setValue(e.target.value);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 160)}px`;
+    const el = ref.current;
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
     }
   };
 
-  const showGlow = isFocused || value.length > 0;
+  const hasText = value.trim().length > 0;
 
   return (
     <div>
-      <div className="relative flex items-end gap-3">
-        {/* Glow ring */}
-        {showGlow && (
-          <motion.div
-            className="absolute -inset-px rounded-2xl pointer-events-none z-0"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            style={{
-              boxShadow: value.length > 0
-                ? "0 0 25px rgba(200,200,210,0.12), 0 0 50px rgba(200,200,210,0.04)"
-                : "0 0 15px rgba(200,200,210,0.08)",
-            }}
-          />
-        )}
+      {/* Input row */}
+      <div
+        className={`
+          flex items-end gap-3 rounded-2xl border px-4 py-3
+          transition-all duration-200
+          ${focused
+            ? "bg-[#1c1c1e] border-[#3a3a3c]"
+            : "bg-[#141414] border-[#2c2c2e]"
+          }
+        `}
+      >
+        <textarea
+          ref={ref}
+          value={value}
+          onChange={onChange}
+          onKeyDown={onKey}
+          onFocus={() => setFocused(true)}
+          onBlur={() => setFocused(false)}
+          disabled={disabled}
+          placeholder="Escribe tu mensaje..."
+          rows={1}
+          className="flex-1 min-w-0 bg-transparent resize-none outline-none text-[14px] text-white placeholder:text-[#48484a] leading-[1.5] max-h-[160px]"
+        />
 
-        {/* Input */}
-        <div className="relative flex-1 min-w-0 z-10">
-          <textarea
-            ref={textareaRef}
-            value={value}
-            onChange={handleInput}
-            onKeyDown={handleKeyDown}
-            onFocus={() => setIsFocused(true)}
-            onBlur={() => setIsFocused(false)}
-            disabled={disabled}
-            placeholder="Escribe tu mensaje..."
-            rows={1}
-            className="w-full resize-none outline-none bg-white/[0.05] border border-white/[0.1] focus:border-white/[0.18] focus:bg-white/[0.07] rounded-2xl px-5 py-3.5 text-sm text-[var(--aeon-text-primary)] placeholder:text-[var(--aeon-text-muted)] leading-relaxed transition-all duration-200 backdrop-blur-sm"
-            aria-label="Chat message input"
-          />
-        </div>
-
-        {/* Button */}
         <AnimatePresence mode="wait">
           {isStreaming ? (
             <motion.button
@@ -93,13 +80,10 @@ export default function ChatInput({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
               onClick={onStop}
-              className="relative z-10 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl bg-white/[0.08] hover:bg-white/[0.12] border border-white/[0.12] transition-all duration-200 cursor-pointer"
-              aria-label="Detener"
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[#2c2c2e] hover:bg-[#3a3a3c] transition-colors cursor-pointer"
             >
-              <Square className="w-4 h-4 fill-current text-[var(--aeon-text-secondary)]" />
+              <Square size={14} className="text-[#a1a1a6] fill-current" />
             </motion.button>
           ) : (
             <motion.button
@@ -107,20 +91,24 @@ export default function ChatInput({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSend}
-              disabled={!value.trim() || disabled}
-              className="relative z-10 flex-shrink-0 w-12 h-12 flex items-center justify-center rounded-2xl bg-white/[0.08] hover:bg-white/[0.14] border border-white/[0.12] disabled:opacity-25 disabled:pointer-events-none transition-all duration-200 cursor-pointer"
-              aria-label="Enviar"
+              onClick={send}
+              disabled={!hasText || disabled}
+              className={`
+                shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer
+                ${hasText
+                  ? "bg-white text-black hover:bg-white/90"
+                  : "bg-[#2c2c2e] text-[#48484a] pointer-events-none"
+                }
+              `}
             >
-              <Send className="w-4 h-4 text-[var(--aeon-text-secondary)]" />
+              <Send size={14} />
             </motion.button>
           )}
         </AnimatePresence>
       </div>
 
-      <p className="mt-2.5 text-center text-[10px] text-[var(--aeon-text-muted)] tracking-wider">
+      {/* Hint */}
+      <p className="mt-2 text-center text-[11px] text-[#3a3a3c]">
         Enter para enviar · Shift+Enter para nueva línea
       </p>
     </div>

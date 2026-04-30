@@ -1,43 +1,33 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { cn } from "@/lib/utils/cn";
 import type { ChatMessage } from "@/types";
 
-interface MessageBubbleProps {
+interface Props {
   message: ChatMessage;
 }
 
-/**
- * Chat message — user right-aligned, assistant left-aligned.
- * Max-width prevents full-width stretch.
- */
-export default function MessageBubble({ message }: MessageBubbleProps) {
+export default function MessageBubble({ message }: Props) {
   const isUser = message.role === "user";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 10 }}
+      initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" as const }}
-      className={cn("flex", isUser ? "justify-end" : "justify-start")}
+      transition={{ duration: 0.25 }}
+      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
     >
       <div
-        className={cn(
-          "max-w-[80%] sm:max-w-[72%] rounded-2xl px-4 py-3",
-          "text-sm leading-relaxed",
-          isUser
-            ? "bg-white/[0.09] border border-white/[0.1] text-[var(--aeon-text-primary)] rounded-br-lg"
-            : "bg-white/[0.04] border border-white/[0.07] text-[var(--aeon-text-secondary)] rounded-bl-lg"
-        )}
+        className={`
+          max-w-[75%] rounded-2xl px-4 py-3 text-[14px] leading-[1.6]
+          ${isUser
+            ? "bg-[#2c2c2e] text-white rounded-br-md"
+            : "bg-[#1c1c1e] border border-[#2c2c2e] text-[#d1d1d6] rounded-bl-md"
+          }
+        `}
       >
-        {/* Role */}
-        <span
-          className={cn(
-            "block text-[10px] uppercase tracking-[0.1em] mb-1 font-medium",
-            isUser ? "text-[var(--aeon-text-tertiary)]" : "text-[var(--aeon-accent)]"
-          )}
-        >
+        {/* Label */}
+        <span className={`block text-[10px] uppercase tracking-[0.08em] mb-1 font-medium ${isUser ? "text-[#636366]" : "text-[#8e8e93]"}`}>
           {isUser ? "Tú" : "Aeon"}
         </span>
 
@@ -46,19 +36,16 @@ export default function MessageBubble({ message }: MessageBubbleProps) {
           {message.content}
           {message.isStreaming && (
             <motion.span
-              className="inline-block w-0.5 h-4 bg-[var(--aeon-accent-light)] ml-0.5 align-text-bottom"
+              className="inline-block w-[2px] h-[16px] bg-[#8e8e93] ml-0.5 align-text-bottom"
               animate={{ opacity: [1, 0] }}
-              transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
+              transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
             />
           )}
         </p>
 
-        {/* Timestamp */}
-        <span className="block mt-1.5 text-[10px] text-[var(--aeon-text-muted)] tracking-wide">
-          {new Date(message.timestamp).toLocaleTimeString("es-ES", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
+        {/* Time */}
+        <span className="block mt-1.5 text-[10px] text-[#48484a]">
+          {new Date(message.timestamp).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>
     </motion.div>

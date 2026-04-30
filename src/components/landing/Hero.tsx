@@ -4,81 +4,61 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 
-/**
- * Hero — full viewport centered with radial light beam.
- */
 export default function Hero() {
   return (
-    <section className="relative flex items-center justify-center min-h-screen w-full px-6 sm:px-8 overflow-hidden">
-      {/* Radial light beam */}
-      <div className="light-beam" />
+    <section className="relative min-h-screen flex items-center justify-center px-6">
+      {/* Subtle radial glow */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: "radial-gradient(ellipse 50% 40% at 50% 45%, rgba(255,255,255,0.03) 0%, transparent 70%)"
+      }} />
 
-      {/* Content — centered column */}
-      <div className="relative z-10 w-full max-w-2xl mx-auto text-center">
+      <div className="relative z-10 text-center max-w-[560px] mx-auto">
         {/* Badge */}
         <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.4 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.4 }}
           className="mb-8"
         >
-          <span className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full text-[11px] tracking-[0.1em] uppercase text-[var(--aeon-text-tertiary)] border border-white/[0.08] bg-white/[0.03]">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/60 animate-pulse" />
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-[11px] tracking-[0.08em] uppercase text-[#8e8e93] border border-[#2c2c2e] bg-[#1c1c1e]/50">
+            <span className="w-[5px] h-[5px] rounded-full bg-emerald-500/60 animate-pulse" />
             Inteligencia Soberana
           </span>
         </motion.div>
 
         {/* Title */}
         <motion.h1
-          initial={{ opacity: 0, y: 16 }}
+          initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.25, duration: 0.5 }}
-          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-semibold tracking-tight leading-[1.05] text-[var(--aeon-text-primary)] mb-6"
+          transition={{ delay: 0.15, duration: 0.5 }}
+          className="text-[48px] sm:text-[60px] md:text-[72px] font-semibold tracking-[-0.02em] text-white leading-[1.1] mb-5"
         >
           Aeon IA
         </motion.h1>
 
         {/* Subtitle */}
         <motion.p
-          initial={{ opacity: 0, y: 12 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.45, duration: 0.5 }}
-          className="text-base sm:text-lg text-[var(--aeon-text-secondary)] max-w-md mx-auto leading-relaxed tracking-wide font-light mb-10"
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="text-[16px] sm:text-[18px] text-[#8e8e93] leading-[1.6] max-w-[420px] mx-auto mb-10"
         >
-          Plataforma de inteligencia artificial con soberanía total sobre tus
-          datos. Sin nubes públicas. Sin compromisos.
+          Plataforma de inteligencia artificial con soberanía total sobre tus datos. Sin nubes públicas. Sin compromisos.
         </motion.p>
 
         {/* CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
+          initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.65, duration: 0.4 }}
+          transition={{ delay: 0.45, duration: 0.4 }}
         >
           <Link href="/chat">
-            <motion.button
-              whileHover={{ scale: 1.03 }}
-              whileTap={{ scale: 0.97 }}
-              className="inline-flex items-center gap-3 px-8 py-4 text-sm sm:text-base font-medium text-white bg-white/[0.08] hover:bg-white/[0.13] border border-white/[0.12] hover:border-white/[0.22] rounded-2xl transition-all duration-200 cursor-pointer tracking-wide"
-            >
+            <button className="inline-flex items-center gap-2.5 px-7 py-3.5 text-[14px] font-medium text-white bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-[#3a3a3c] hover:border-[#48484a] rounded-[14px] transition-all duration-200 cursor-pointer">
               Iniciar conversación
-              <motion.span
-                animate={{ x: [0, 3, 0] }}
-                transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" as const }}
-              >
-                <ArrowRight className="w-4 h-4" />
-              </motion.span>
-            </motion.button>
+              <ArrowRight size={16} />
+            </button>
           </Link>
         </motion.div>
-
-        {/* Accent line */}
-        <motion.div
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ delay: 1, duration: 0.6 }}
-          className="mt-14 w-16 h-px mx-auto bg-gradient-to-r from-transparent via-white/[0.15] to-transparent"
-        />
       </div>
     </section>
   );
