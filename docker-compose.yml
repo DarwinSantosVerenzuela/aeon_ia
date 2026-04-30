@@ -1,0 +1,50 @@
+# ================================
+# Aeon IA — Docker Compose
+# Production deployment configuration
+# ================================
+
+services:
+  aeon-ia:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_AI_ENDPOINT=${NEXT_PUBLIC_AI_ENDPOINT:-}
+    container_name: aeon-ia
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      - NODE_ENV=production
+      - NEXT_PUBLIC_AI_ENDPOINT=${NEXT_PUBLIC_AI_ENDPOINT:-}
+    networks:
+      - aeon-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  # ---- Future: AI Backend Container ----
+  # Uncomment and configure when your AI backend is ready
+  #
+  # ai-backend:
+  #   image: your-ai-image:latest
+  #   container_name: aeon-ai-backend
+  #   restart: unless-stopped
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - MODEL_PATH=/models/your-model
+  #   volumes:
+  #     - ai-models:/models
+  #   networks:
+  #     - aeon-network
+
+networks:
+  aeon-network:
+    driver: bridge
+
+# volumes:
+#   ai-models:
