@@ -6,31 +6,91 @@ import Link from "next/link";
 
 export default function CTASection() {
   return (
-    <section className="w-full max-w-[960px] mx-auto px-6 pt-8 pb-24 sm:pb-32">
-      {/* CTA Card */}
+    <section
+      style={{
+        width: "100%",
+        maxWidth: 960,
+        margin: "0 auto",
+        padding: "0 24px 96px",
+      }}
+    >
       <motion.div
-        initial={{ opacity: 0, y: 12 }}
+        initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true }}
         transition={{ duration: 0.4 }}
-        className="max-w-[480px] mx-auto bg-[#141414] border border-[#1d1d1f] rounded-3xl p-8 sm:p-10 text-center"
+        style={{
+          maxWidth: 480,
+          margin: "0 auto",
+          background: "var(--bg-secondary)",
+          border: "1px solid var(--separator)",
+          borderRadius: 24,
+          padding: "40px 32px",
+          textAlign: "center",
+        }}
       >
-        <h3 className="text-[22px] font-semibold text-white tracking-tight mb-3">
+        <h3
+          style={{
+            fontSize: 22,
+            fontWeight: 600,
+            color: "var(--label-primary)",
+            marginBottom: 10,
+            letterSpacing: "-0.01em",
+          }}
+        >
           Tu inteligencia, tu servidor
         </h3>
-        <p className="text-[14px] text-[#8e8e93] mb-8 max-w-[360px] mx-auto leading-[1.5]">
-          Comienza a interactuar con Aeon IA. La plataforma está lista para conectarse con tu infraestructura.
+        <p
+          style={{
+            fontSize: 14,
+            color: "var(--label-tertiary)",
+            maxWidth: 340,
+            margin: "0 auto 28px",
+            lineHeight: 1.5,
+          }}
+        >
+          Comienza a interactuar con Aeon IA. La plataforma está lista para
+          conectarse con tu infraestructura.
         </p>
-        <Link href="/chat">
-          <button className="inline-flex items-center gap-2 px-6 py-3 text-[14px] font-medium text-white bg-[#1c1c1e] hover:bg-[#2c2c2e] border border-[#3a3a3c] hover:border-[#48484a] rounded-xl transition-all duration-200 cursor-pointer">
+        <Link href="/chat" style={{ textDecoration: "none" }}>
+          <button
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 8,
+              padding: "12px 24px",
+              fontSize: 14,
+              fontWeight: 500,
+              color: "var(--label-primary)",
+              background: "var(--bg-tertiary)",
+              border: "1px solid var(--separator-opaque)",
+              borderRadius: 12,
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = "var(--bg-elevated)";
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = "var(--bg-tertiary)";
+            }}
+          >
             Abrir Chat
             <ArrowRight size={15} />
           </button>
         </Link>
       </motion.div>
 
-      {/* Footer */}
-      <p className="mt-14 text-center text-[11px] text-[#3a3a3c] tracking-[0.12em] uppercase">
+      <p
+        style={{
+          marginTop: 48,
+          textAlign: "center",
+          fontSize: 11,
+          color: "var(--label-quaternary)",
+          letterSpacing: "0.12em",
+          textTransform: "uppercase" as const,
+        }}
+      >
         Aeon IA — Inteligencia Soberana
       </p>
     </section>

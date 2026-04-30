@@ -14,29 +14,53 @@ export default function MessageBubble({ message }: Props) {
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className={`flex ${isUser ? "justify-end" : "justify-start"}`}
+      transition={{ duration: 0.2 }}
+      style={{
+        display: "flex",
+        justifyContent: isUser ? "flex-end" : "flex-start",
+      }}
     >
       <div
-        className={`
-          max-w-[75%] rounded-2xl px-4 py-3 text-[14px] leading-[1.6]
-          ${isUser
-            ? "bg-[#2c2c2e] text-white rounded-br-md"
-            : "bg-[#1c1c1e] border border-[#2c2c2e] text-[#d1d1d6] rounded-bl-md"
-          }
-        `}
+        style={{
+          maxWidth: "75%",
+          borderRadius: 18,
+          ...(isUser ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }),
+          padding: "12px 16px",
+          fontSize: 14,
+          lineHeight: 1.6,
+          background: isUser ? "var(--bg-tertiary)" : "var(--bg-secondary)",
+          border: `1px solid ${isUser ? "var(--separator-opaque)" : "var(--separator)"}`,
+          color: isUser ? "var(--label-primary)" : "var(--label-secondary)",
+        }}
       >
         {/* Label */}
-        <span className={`block text-[10px] uppercase tracking-[0.08em] mb-1 font-medium ${isUser ? "text-[#636366]" : "text-[#8e8e93]"}`}>
+        <span
+          style={{
+            display: "block",
+            fontSize: 10,
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginBottom: 4,
+            fontWeight: 500,
+            color: isUser ? "var(--label-quaternary)" : "var(--label-tertiary)",
+          }}
+        >
           {isUser ? "Tú" : "Aeon"}
         </span>
 
         {/* Content */}
-        <p className="whitespace-pre-wrap break-words">
+        <p style={{ whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>
           {message.content}
           {message.isStreaming && (
             <motion.span
-              className="inline-block w-[2px] h-[16px] bg-[#8e8e93] ml-0.5 align-text-bottom"
+              style={{
+                display: "inline-block",
+                width: 2,
+                height: 16,
+                background: "var(--label-tertiary)",
+                marginLeft: 2,
+                verticalAlign: "text-bottom",
+              }}
               animate={{ opacity: [1, 0] }}
               transition={{ duration: 0.5, repeat: Infinity, repeatType: "reverse" }}
             />
@@ -44,8 +68,18 @@ export default function MessageBubble({ message }: Props) {
         </p>
 
         {/* Time */}
-        <span className="block mt-1.5 text-[10px] text-[#48484a]">
-          {new Date(message.timestamp).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
+        <span
+          style={{
+            display: "block",
+            marginTop: 6,
+            fontSize: 10,
+            color: "var(--label-quaternary)",
+          }}
+        >
+          {new Date(message.timestamp).toLocaleTimeString("es-ES", {
+            hour: "2-digit",
+            minute: "2-digit",
+          })}
         </span>
       </div>
     </motion.div>

@@ -17,63 +17,181 @@ export default function ChatContainer() {
   }, [messages]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-[#0a0a0a]">
-      {/* ──────── HEADER ──────── */}
-      <header className="shrink-0 h-[56px] border-b border-[#1d1d1f] flex items-center px-5">
-        <div className="w-full max-w-[760px] mx-auto flex items-center justify-between relative">
-          {/* Left — Back */}
-          <Link href="/" className="z-10 flex items-center gap-2 text-[#8e8e93] hover:text-white transition-colors">
-            <ArrowLeft size={16} />
-            <span className="text-[13px] tracking-wide hidden sm:block">Inicio</span>
-          </Link>
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        display: "flex",
+        flexDirection: "column",
+        background: "var(--bg-primary)",
+      }}
+    >
+      {/* ═══════ HEADER ═══════ */}
+      <div
+        style={{
+          height: 56,
+          flexShrink: 0,
+          borderBottom: "1px solid var(--separator)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          position: "relative",
+          background: "var(--bg-secondary)",
+        }}
+      >
+        {/* Left */}
+        <Link
+          href="/"
+          style={{
+            position: "absolute",
+            left: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            color: "var(--label-tertiary)",
+            textDecoration: "none",
+            fontSize: 13,
+          }}
+        >
+          <ArrowLeft size={16} />
+          <span className="hidden sm:inline">Inicio</span>
+        </Link>
 
-          {/* Center — Brand (absolutely centered) */}
-          <div className="absolute left-0 right-0 flex items-center justify-center pointer-events-none">
-            <span className="text-[15px] font-medium tracking-[0.02em] text-white">Aeon</span>
-            <span className="text-[15px] font-light tracking-[0.02em] text-[#8e8e93] ml-1">IA</span>
-          </div>
-
-          {/* Right — Status */}
-          <div className="z-10 flex items-center gap-2">
-            <span className="w-[6px] h-[6px] rounded-full bg-[#636366]" />
-            <span className="text-[12px] text-[#636366] tracking-wide">Demo</span>
-          </div>
+        {/* Center */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "var(--label-primary)" }}>
+            Aeon
+          </span>
+          <span style={{ fontSize: 15, fontWeight: 300, color: "var(--label-tertiary)" }}>
+            IA
+          </span>
         </div>
-      </header>
 
-      {/* ──────── MAIN ──────── */}
-      <main className="flex-1 min-h-0 overflow-y-auto custom-scrollbar">
+        {/* Right */}
+        <div
+          style={{
+            position: "absolute",
+            right: 20,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+          }}
+        >
+          <span
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              background: "var(--label-quaternary)",
+            }}
+          />
+          <span style={{ fontSize: 12, color: "var(--label-quaternary)" }}>Demo</span>
+        </div>
+      </div>
+
+      {/* ═══════ CONTENT ═══════ */}
+      <div
+        style={{ flex: 1, minHeight: 0, overflowY: "auto" }}
+        className="custom-scrollbar"
+      >
         {messages.length === 0 ? (
-          /* ── Empty State: centered on screen ── */
-          <div className="h-full flex items-center justify-center px-5">
+          /* ── Empty State: CSS Grid centering ── */
+          <div
+            style={{
+              height: "100%",
+              display: "grid",
+              placeItems: "center",
+              padding: "0 24px",
+            }}
+          >
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
-              className="flex flex-col items-center text-center -mt-16"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                textAlign: "center",
+                marginTop: -40,
+              }}
             >
-              {/* Icon */}
-              <div className="w-[56px] h-[56px] rounded-[16px] bg-[#1c1c1e] border border-[#2c2c2e] flex items-center justify-center mb-5">
-                <MessageCircle size={24} className="text-[#636366]" />
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: 18,
+                  background: "var(--bg-secondary)",
+                  border: "1px solid var(--separator)",
+                  display: "grid",
+                  placeItems: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <MessageCircle size={26} color="var(--label-tertiary)" />
               </div>
 
-              {/* Title */}
-              <h1 className="text-[22px] font-semibold text-white tracking-tight mb-1.5">
+              <h1
+                style={{
+                  fontSize: 24,
+                  fontWeight: 600,
+                  color: "var(--label-primary)",
+                  marginBottom: 6,
+                  letterSpacing: "-0.01em",
+                }}
+              >
                 Aeon IA
               </h1>
 
-              {/* Subtitle */}
-              <p className="text-[14px] text-[#8e8e93] max-w-[320px] leading-[1.5] mb-8">
-                Inicia una conversación. Tus mensajes son procesados de forma segura y soberana.
+              <p
+                style={{
+                  fontSize: 15,
+                  color: "var(--label-tertiary)",
+                  maxWidth: 340,
+                  lineHeight: 1.5,
+                  marginBottom: 32,
+                }}
+              >
+                Inicia una conversación. Tus mensajes son procesados de forma
+                segura y soberana.
               </p>
 
-              {/* Suggestions */}
-              <div className="flex flex-wrap justify-center gap-2">
-                {["¿Qué puedes hacer?", "Explica tu arquitectura", "¿Cómo funciona la soberanía?"].map((text) => (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "center",
+                  gap: 10,
+                }}
+              >
+                {[
+                  "¿Qué puedes hacer?",
+                  "Explica tu arquitectura",
+                  "¿Cómo funciona la soberanía?",
+                ].map((text) => (
                   <button
                     key={text}
                     onClick={() => sendMessage(text)}
-                    className="px-4 py-2 text-[13px] rounded-full bg-[#1c1c1e] border border-[#2c2c2e] text-[#a1a1a6] hover:text-white hover:bg-[#2c2c2e] hover:border-[#3a3a3c] transition-all duration-150 cursor-pointer"
+                    style={{
+                      padding: "10px 18px",
+                      fontSize: 13,
+                      borderRadius: 12,
+                      background: "var(--bg-secondary)",
+                      border: "1px solid var(--separator)",
+                      color: "var(--label-secondary)",
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                    }}
+                    onMouseOver={(e) => {
+                      e.currentTarget.style.background = "var(--bg-tertiary)";
+                      e.currentTarget.style.borderColor = "var(--separator-opaque)";
+                      e.currentTarget.style.color = "var(--label-primary)";
+                    }}
+                    onMouseOut={(e) => {
+                      e.currentTarget.style.background = "var(--bg-secondary)";
+                      e.currentTarget.style.borderColor = "var(--separator)";
+                      e.currentTarget.style.color = "var(--label-secondary)";
+                    }}
                   >
                     {text}
                   </button>
@@ -83,8 +201,15 @@ export default function ChatContainer() {
           </div>
         ) : (
           /* ── Messages ── */
-          <div className="w-full max-w-[760px] mx-auto px-5 py-5">
-            <div className="space-y-3">
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 760,
+              margin: "0 auto",
+              padding: "20px 24px",
+            }}
+          >
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               <AnimatePresence>
                 {messages.map((msg) => (
                   <MessageBubble key={msg.id} message={msg} />
@@ -93,24 +218,33 @@ export default function ChatContainer() {
             </div>
 
             {error && (
-              <p className="text-center text-[12px] text-red-400/80 mt-3">{error}</p>
+              <p style={{ textAlign: "center", fontSize: 12, color: "#ff6b6b", marginTop: 12 }}>
+                {error}
+              </p>
             )}
 
-            <div ref={bottomRef} className="h-6" />
+            <div ref={bottomRef} style={{ height: 20 }} />
           </div>
         )}
-      </main>
+      </div>
 
-      {/* ──────── INPUT ──────── */}
-      <footer className="shrink-0 border-t border-[#1d1d1f] bg-[#0a0a0a] px-5 py-4">
-        <div className="w-full max-w-[760px] mx-auto">
+      {/* ═══════ INPUT ═══════ */}
+      <div
+        style={{
+          flexShrink: 0,
+          borderTop: "1px solid var(--separator)",
+          background: "var(--bg-secondary)",
+          padding: "16px 24px",
+        }}
+      >
+        <div style={{ width: "100%", maxWidth: 760, margin: "0 auto" }}>
           <ChatInput
             onSend={sendMessage}
             onStop={stopStream}
             isStreaming={isStreaming}
           />
         </div>
-      </footer>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Send, Square } from "lucide-react";
 
 interface ChatInputProps {
@@ -41,7 +40,7 @@ export default function ChatInput({
     const el = ref.current;
     if (el) {
       el.style.height = "auto";
-      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+      el.style.height = `${Math.min(el.scrollHeight, 150)}px`;
     }
   };
 
@@ -49,16 +48,17 @@ export default function ChatInput({
 
   return (
     <div>
-      {/* Input row */}
       <div
-        className={`
-          flex items-end gap-3 rounded-2xl border px-4 py-3
-          transition-all duration-200
-          ${focused
-            ? "bg-[#1c1c1e] border-[#3a3a3c]"
-            : "bg-[#141414] border-[#2c2c2e]"
-          }
-        `}
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          gap: 12,
+          padding: "12px 16px",
+          borderRadius: 16,
+          background: focused ? "var(--bg-tertiary)" : "var(--bg-tertiary)",
+          border: `1px solid ${focused ? "var(--separator-opaque)" : "var(--separator)"}`,
+          transition: "border-color 0.2s",
+        }}
       >
         <textarea
           ref={ref}
@@ -70,45 +70,69 @@ export default function ChatInput({
           disabled={disabled}
           placeholder="Escribe tu mensaje..."
           rows={1}
-          className="flex-1 min-w-0 bg-transparent resize-none outline-none text-[14px] text-white placeholder:text-[#48484a] leading-[1.5] max-h-[160px]"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            background: "transparent",
+            border: "none",
+            outline: "none",
+            resize: "none",
+            fontSize: 14,
+            lineHeight: 1.5,
+            color: "var(--label-primary)",
+            maxHeight: 150,
+          }}
         />
 
-        <AnimatePresence mode="wait">
-          {isStreaming ? (
-            <motion.button
-              key="stop"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={onStop}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[#2c2c2e] hover:bg-[#3a3a3c] transition-colors cursor-pointer"
-            >
-              <Square size={14} className="text-[#a1a1a6] fill-current" />
-            </motion.button>
-          ) : (
-            <motion.button
-              key="send"
-              initial={{ scale: 0.8, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.8, opacity: 0 }}
-              onClick={send}
-              disabled={!hasText || disabled}
-              className={`
-                shrink-0 w-8 h-8 flex items-center justify-center rounded-lg transition-all cursor-pointer
-                ${hasText
-                  ? "bg-white text-black hover:bg-white/90"
-                  : "bg-[#2c2c2e] text-[#48484a] pointer-events-none"
-                }
-              `}
-            >
-              <Send size={14} />
-            </motion.button>
-          )}
-        </AnimatePresence>
+        {isStreaming ? (
+          <button
+            onClick={onStop}
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: 8,
+              background: "var(--bg-elevated)",
+              border: "none",
+              cursor: "pointer",
+              transition: "background 0.15s",
+            }}
+          >
+            <Square size={14} color="var(--label-secondary)" fill="var(--label-secondary)" />
+          </button>
+        ) : (
+          <button
+            onClick={send}
+            disabled={!hasText || disabled}
+            style={{
+              flexShrink: 0,
+              width: 32,
+              height: 32,
+              display: "grid",
+              placeItems: "center",
+              borderRadius: 8,
+              background: hasText ? "#ffffff" : "var(--bg-elevated)",
+              border: "none",
+              cursor: hasText ? "pointer" : "default",
+              opacity: hasText ? 1 : 0.4,
+              transition: "all 0.15s",
+            }}
+          >
+            <Send size={14} color={hasText ? "#000000" : "var(--label-quaternary)"} />
+          </button>
+        )}
       </div>
 
-      {/* Hint */}
-      <p className="mt-2 text-center text-[11px] text-[#3a3a3c]">
+      <p
+        style={{
+          marginTop: 8,
+          textAlign: "center",
+          fontSize: 11,
+          color: "var(--label-quaternary)",
+        }}
+      >
         Enter para enviar · Shift+Enter para nueva línea
       </p>
     </div>
