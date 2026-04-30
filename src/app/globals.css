@@ -6,49 +6,40 @@
    =================================================== */
 
 :root {
-  /* ---- Grey Palette (Apple-inspired) ---- */
+  /* ---- Grey Palette (Apple-inspired, boosted contrast) ---- */
   --aeon-black: #000000;
-  --aeon-bg: #0a0a0a;
-  --aeon-surface: #111111;
-  --aeon-surface-2: #1a1a1a;
-  --aeon-surface-3: #222222;
-  --aeon-border: rgba(255, 255, 255, 0.06);
-  --aeon-border-hover: rgba(255, 255, 255, 0.12);
-  --aeon-border-active: rgba(255, 255, 255, 0.18);
+  --aeon-bg: #09090b;
+  --aeon-surface: #131316;
+  --aeon-surface-2: #1c1c21;
+  --aeon-surface-3: #26262c;
+  --aeon-border: rgba(255, 255, 255, 0.08);
+  --aeon-border-hover: rgba(255, 255, 255, 0.16);
+  --aeon-border-active: rgba(255, 255, 255, 0.24);
 
-  /* ---- Text Hierarchy ---- */
+  /* ---- Text Hierarchy (boosted contrast) ---- */
   --aeon-text-primary: #f5f5f7;
-  --aeon-text-secondary: #a1a1a6;
-  --aeon-text-tertiary: #6e6e73;
-  --aeon-text-muted: #48484a;
+  --aeon-text-secondary: #b0b0b8;
+  --aeon-text-tertiary: #8e8e93;
+  --aeon-text-muted: #636366;
 
-  /* ---- Accent (subtle, not dominant) ---- */
-  --aeon-accent: #86868b;
-  --aeon-accent-light: #aeaeb2;
+  /* ---- Accent (subtle silver) ---- */
+  --aeon-accent: #a1a1a6;
+  --aeon-accent-light: #c7c7cc;
 
-  /* ---- Glass ---- */
-  --glass-bg: rgba(255, 255, 255, 0.03);
-  --glass-bg-hover: rgba(255, 255, 255, 0.05);
-  --glass-bg-active: rgba(255, 255, 255, 0.07);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-border-glow: rgba(255, 255, 255, 0.15);
+  /* ---- Glass (boosted visibility) ---- */
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-bg-hover: rgba(255, 255, 255, 0.08);
+  --glass-bg-active: rgba(255, 255, 255, 0.11);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-border-glow: rgba(255, 255, 255, 0.22);
 
   /* ---- Glow ---- */
-  --glow-color: rgba(174, 174, 178, 0.12);
-  --glow-color-active: rgba(174, 174, 178, 0.25);
+  --glow-color: rgba(200, 200, 210, 0.15);
+  --glow-color-active: rgba(200, 200, 210, 0.3);
 
   /* ---- Radial Light Beam ---- */
-  --beam-color: rgba(174, 174, 178, 0.06);
-  --beam-color-inner: rgba(255, 255, 255, 0.04);
-
-  /* ---- Spacing ---- */
-  --space-xs: 0.25rem;
-  --space-sm: 0.5rem;
-  --space-md: 1rem;
-  --space-lg: 1.5rem;
-  --space-xl: 2rem;
-  --space-2xl: 3rem;
-  --space-3xl: 4rem;
+  --beam-color: rgba(200, 200, 210, 0.07);
+  --beam-color-inner: rgba(255, 255, 255, 0.05);
 
   /* ---- Typography ---- */
   --tracking-wide: 0.025em;
@@ -82,7 +73,6 @@
   --animate-float: float 6s ease-in-out infinite;
   --animate-fade-in-up: fade-in-up 0.5s ease-out forwards;
   --animate-shimmer: shimmer 2s linear infinite;
-  --animate-beam: beam-rotate 20s linear infinite;
 }
 
 /* ===================================================
@@ -127,15 +117,6 @@
   }
 }
 
-@keyframes beam-rotate {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
-}
-
 @keyframes typing-dot {
   0%, 80%, 100% {
     opacity: 0.3;
@@ -172,28 +153,28 @@ body {
 }
 
 /* ===================================================
-   GLASS UTILITIES
+   GLASS UTILITIES (boosted opacity & blur)
    =================================================== */
 
 .glass {
   background: var(--glass-bg);
-  backdrop-filter: blur(20px) saturate(120%);
-  -webkit-backdrop-filter: blur(20px) saturate(120%);
+  backdrop-filter: blur(24px) saturate(130%);
+  -webkit-backdrop-filter: blur(24px) saturate(130%);
   border: 1px solid var(--glass-border);
 }
 
 .glass-strong {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
 }
 
 .glass-subtle {
-  background: rgba(255, 255, 255, 0.02);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 /* ===================================================
@@ -236,7 +217,7 @@ body {
   background:
     radial-gradient(
       circle at 50% 50%,
-      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.025) 0%,
       transparent 50%
     );
 }
@@ -254,18 +235,18 @@ body {
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 3px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Firefox */
 .custom-scrollbar {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
 }
 
 /* ===================================================
@@ -292,7 +273,7 @@ body {
   content: "";
   position: fixed;
   inset: 0;
-  opacity: 0.015;
+  opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   pointer-events: none;
@@ -306,4 +287,12 @@ body {
 ::selection {
   background: rgba(174, 174, 178, 0.3);
   color: var(--aeon-text-primary);
+}
+
+/* ===================================================
+   HIDE NEXT.JS DEV INDICATOR (overlaps chat input)
+   =================================================== */
+[data-nextjs-toast],
+nextjs-portal {
+  display: none !important;
 }

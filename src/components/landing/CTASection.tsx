@@ -3,63 +3,51 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Button from "@/components/ui/Button";
 
 /**
- * Bottom CTA section with glassmorphism card and subtle gradient border.
+ * CTA section — centered card with gradient border.
  */
 export default function CTASection() {
   return (
-    <section className="relative z-10 px-6 py-24">
+    <section className="relative z-10 w-full max-w-5xl mx-auto px-6 sm:px-8 py-16 sm:py-24">
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-        className="max-w-2xl mx-auto"
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.5 }}
+        className="max-w-xl mx-auto"
       >
-        {/* Card with gradient border effect */}
-        <div className="relative rounded-3xl p-px overflow-hidden">
-          {/* Gradient border */}
-          <div
-            className="absolute inset-0 rounded-3xl"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.04) 100%)",
-            }}
-          />
+        {/* Card */}
+        <div className="relative rounded-3xl overflow-hidden">
+          {/* Gradient border glow */}
+          <div className="absolute -inset-px rounded-3xl bg-gradient-to-br from-white/[0.1] via-transparent to-white/[0.05]" />
 
-          {/* Card content */}
-          <div className="relative rounded-3xl bg-[var(--aeon-surface)]/80 backdrop-blur-xl p-10 sm:p-12 text-center">
-            <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--aeon-text-primary)] mb-4">
+          <div className="relative rounded-3xl bg-[var(--aeon-surface)] p-8 sm:p-10 md:p-12 text-center">
+            <h3 className="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--aeon-text-primary)] mb-3">
               Tu inteligencia, tu servidor
             </h3>
-            <p className="text-[var(--aeon-text-secondary)] mb-8 max-w-md mx-auto leading-relaxed tracking-wide text-sm font-light">
+            <p className="text-sm text-[var(--aeon-text-secondary)] mb-8 max-w-sm mx-auto leading-relaxed tracking-wide font-light">
               Comienza a interactuar con Aeon IA. La plataforma está lista para
-              conectarse con tu infraestructura de IA cuando lo decidas.
+              conectarse con tu infraestructura cuando lo decidas.
             </p>
             <Link href="/chat">
-              <Button size="lg" className="gap-3 px-8">
+              <motion.button
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.97 }}
+                className="inline-flex items-center gap-2.5 px-7 py-3 text-sm font-medium text-white bg-white/[0.1] hover:bg-white/[0.15] border border-white/[0.15] hover:border-white/[0.25] rounded-xl transition-all duration-200 cursor-pointer"
+              >
                 Abrir Chat
                 <ArrowRight className="w-4 h-4" />
-              </Button>
+              </motion.button>
             </Link>
           </div>
         </div>
       </motion.div>
 
       {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="mt-20 text-center"
-      >
-        <p className="text-xs text-[var(--aeon-text-muted)] tracking-[0.15em] uppercase">
-          Aeon IA — Inteligencia Soberana
-        </p>
-      </motion.footer>
+      <p className="mt-16 text-center text-[11px] text-[var(--aeon-text-muted)] tracking-[0.15em] uppercase">
+        Aeon IA — Inteligencia Soberana
+      </p>
     </section>
   );
 }

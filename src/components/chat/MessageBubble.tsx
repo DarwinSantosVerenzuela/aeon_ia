@@ -9,68 +9,57 @@ interface MessageBubbleProps {
 }
 
 /**
- * Individual chat message bubble.
- * User messages: right-aligned with accent tint.
- * Assistant messages: left-aligned with glass background.
+ * Chat message — user right-aligned, assistant left-aligned.
+ * Max-width prevents full-width stretch.
  */
 export default function MessageBubble({ message }: MessageBubbleProps) {
   const isUser = message.role === "user";
 
   return (
     <motion.div
-      layout
-      initial={{ opacity: 0, y: 12, scale: 0.98 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.35,
-        ease: [0.25, 0.46, 0.45, 0.94],
-      }}
-      className={cn(
-        "flex w-full",
-        isUser ? "justify-end" : "justify-start"
-      )}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, ease: "easeOut" as const }}
+      className={cn("flex", isUser ? "justify-end" : "justify-start")}
     >
       <div
         className={cn(
-          "max-w-[80%] sm:max-w-[70%] rounded-2xl px-4 py-3",
-          "text-sm leading-relaxed tracking-wide",
+          "max-w-[80%] sm:max-w-[72%] rounded-2xl px-4 py-3",
+          "text-sm leading-relaxed",
           isUser
-            ? "bg-white/[0.08] border border-white/[0.08] text-[var(--aeon-text-primary)]"
-            : "bg-white/[0.03] border border-white/[0.04] text-[var(--aeon-text-secondary)]",
-          isUser ? "rounded-br-lg" : "rounded-bl-lg"
+            ? "bg-white/[0.09] border border-white/[0.1] text-[var(--aeon-text-primary)] rounded-br-lg"
+            : "bg-white/[0.04] border border-white/[0.07] text-[var(--aeon-text-secondary)] rounded-bl-lg"
         )}
       >
-        {/* Role label */}
-        <div
+        {/* Role */}
+        <span
           className={cn(
-            "text-[10px] uppercase tracking-[0.12em] mb-1.5 font-medium",
-            isUser
-              ? "text-[var(--aeon-text-tertiary)]"
-              : "text-[var(--aeon-accent)]"
+            "block text-[10px] uppercase tracking-[0.1em] mb-1 font-medium",
+            isUser ? "text-[var(--aeon-text-tertiary)]" : "text-[var(--aeon-accent)]"
           )}
         >
           {isUser ? "Tú" : "Aeon"}
-        </div>
+        </span>
 
-        {/* Message content */}
+        {/* Content */}
         <p className="whitespace-pre-wrap break-words">
           {message.content}
           {message.isStreaming && (
             <motion.span
               className="inline-block w-0.5 h-4 bg-[var(--aeon-accent-light)] ml-0.5 align-text-bottom"
-              animate={{ opacity: [1, 0, 1] }}
-              transition={{ duration: 0.8, repeat: Infinity }}
+              animate={{ opacity: [1, 0] }}
+              transition={{ duration: 0.6, repeat: Infinity, repeatType: "reverse" }}
             />
           )}
         </p>
 
         {/* Timestamp */}
-        <div className="mt-2 text-[10px] text-[var(--aeon-text-muted)] tracking-wide">
+        <span className="block mt-1.5 text-[10px] text-[var(--aeon-text-muted)] tracking-wide">
           {new Date(message.timestamp).toLocaleTimeString("es-ES", {
             hour: "2-digit",
             minute: "2-digit",
           })}
-        </div>
+        </span>
       </div>
     </motion.div>
   );
