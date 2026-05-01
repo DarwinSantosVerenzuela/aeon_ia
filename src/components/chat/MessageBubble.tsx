@@ -17,15 +17,15 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
         maxWidth: "75%", borderRadius: 18,
         ...(isUser ? { borderBottomRightRadius: 6 } : { borderBottomLeftRadius: 6 }),
         padding: "12px 16px", fontSize: 14, lineHeight: 1.6,
-        background: isUser ? "#007aff" : "#ffffff",
-        border: isUser ? "none" : "1px solid #d2d2d7",
-        color: isUser ? "#ffffff" : "#1d1d1f",
-        boxShadow: isUser ? "none" : "0 1px 2px rgba(0,0,0,0.04)",
+        background: isUser ? "#e8e8ed" : "#ffffff",
+        border: isUser ? "1px solid #d2d2d7" : "1px solid #d2d2d7",
+        color: isUser ? "#48484a" : "#48484a",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
       }}>
         <span style={{
           display: "block", fontSize: 10, textTransform: "uppercase",
           letterSpacing: "0.08em", marginBottom: 4, fontWeight: 500,
-          color: isUser ? "rgba(255,255,255,0.7)" : "#86868b",
+          color: isUser ? "#86868b" : "#86868b",
         }}>
           {isUser ? "Tú" : "Aeon"}
         </span>
@@ -41,7 +41,7 @@ export default function MessageBubble({ message }: { message: ChatMessage }) {
           )}
         </p>
 
-        <span style={{ display: "block", marginTop: 6, fontSize: 10, color: isUser ? "rgba(255,255,255,0.6)" : "#aeaeb2" }}>
+        <span style={{ display: "block", marginTop: 6, fontSize: 10, color: isUser ? "#aeaeb2" : "#aeaeb2" }}>
           {new Date(message.timestamp).toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" })}
         </span>
       </div>

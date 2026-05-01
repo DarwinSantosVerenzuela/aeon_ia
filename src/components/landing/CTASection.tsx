@@ -18,7 +18,7 @@ export default function CTASection() {
           textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
         }}
       >
-        <h3 style={{ fontSize: 22, fontWeight: 600, color: "#1d1d1f", marginBottom: 10 }}>
+        <h3 style={{ fontSize: 22, fontWeight: 600, color: "#48484a", marginBottom: 10 }}>
           Tu inteligencia, tu servidor
         </h3>
         <p style={{ fontSize: 14, color: "#6e6e73", maxWidth: 340, margin: "0 auto 28px", lineHeight: 1.5 }}>
@@ -29,12 +29,12 @@ export default function CTASection() {
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "12px 24px", fontSize: 14, fontWeight: 500,
-              color: "#ffffff", background: "#1d1d1f", border: "none",
+              color: "#ffffff", background: "#48484a", border: "none",
               borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
               boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = "#424245"; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = "#1d1d1f"; }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "#636366"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = "#48484a"; }}
           >
             Abrir Chat
             <ArrowRight size={15} />

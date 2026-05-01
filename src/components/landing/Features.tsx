@@ -22,7 +22,7 @@ export default function Features() {
         transition={{ duration: 0.4 }}
         style={{ textAlign: "center", marginBottom: 48 }}
       >
-        <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 600, color: "#1d1d1f", marginBottom: 10 }}>
+        <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 600, color: "#48484a", marginBottom: 10 }}>
           Construido para control total
         </h2>
         <p style={{ fontSize: 15, color: "#6e6e73", maxWidth: 420, margin: "0 auto", lineHeight: 1.5 }}>
@@ -52,7 +52,7 @@ export default function Features() {
             }}>
               <f.icon size={16} color="#6e6e73" />
             </div>
-            <h3 style={{ fontSize: 14, fontWeight: 600, color: "#1d1d1f", marginBottom: 6 }}>{f.title}</h3>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: "#48484a", marginBottom: 6 }}>{f.title}</h3>
             <p style={{ fontSize: 13, color: "#86868b", lineHeight: 1.55, flex: 1 }}>{f.desc}</p>
           </motion.div>
         ))}

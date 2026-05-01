@@ -31,7 +31,7 @@ export default function ChatContainer() {
           <span className="hidden sm:inline">Inicio</span>
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#1d1d1f" }}>Aeon</span>
+          <span style={{ fontSize: 15, fontWeight: 600, color: "#48484a" }}>Aeon</span>
           <span style={{ fontSize: 15, fontWeight: 300, color: "#86868b" }}>IA</span>
         </div>
         <div style={{ position: "absolute", right: 20, display: "flex", alignItems: "center", gap: 8 }}>
@@ -59,7 +59,7 @@ export default function ChatContainer() {
                 <MessageCircle size={26} color="#86868b" />
               </div>
 
-              <h1 style={{ fontSize: 24, fontWeight: 600, color: "#1d1d1f", marginBottom: 6 }}>Aeon IA</h1>
+              <h1 style={{ fontSize: 24, fontWeight: 600, color: "#48484a", marginBottom: 6 }}>Aeon IA</h1>
               <p style={{ fontSize: 15, color: "#6e6e73", maxWidth: 340, lineHeight: 1.5, marginBottom: 32 }}>
                 Inicia una conversación. Tus mensajes son procesados de forma segura y soberana.
               </p>
@@ -71,7 +71,7 @@ export default function ChatContainer() {
                     onClick={() => sendMessage(text)}
                     style={{
                       padding: "10px 18px", fontSize: 13, borderRadius: 12,
-                      background: "#ffffff", border: "1px solid #d2d2d7", color: "#1d1d1f",
+                      background: "#ffffff", border: "1px solid #d2d2d7", color: "#48484a",
                       cursor: "pointer", transition: "all 0.15s",
                       boxShadow: "0 1px 2px rgba(0,0,0,0.04)",
                     }}

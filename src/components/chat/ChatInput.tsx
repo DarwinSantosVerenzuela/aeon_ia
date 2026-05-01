@@ -41,8 +41,8 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
         display: "flex", alignItems: "flex-end", gap: 12,
         padding: "12px 16px", borderRadius: 16,
         background: "#ffffff",
-        border: focused ? "1px solid #007aff" : "1px solid #d2d2d7",
-        boxShadow: focused ? "0 0 0 3px rgba(0,122,255,0.12)" : "0 1px 3px rgba(0,0,0,0.06)",
+        border: focused ? "1px solid #86868b" : "1px solid #d2d2d7",
+        boxShadow: focused ? "0 0 0 3px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.06)",
         transition: "all 0.2s",
       }}>
         <textarea
@@ -51,7 +51,7 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
           disabled={disabled} placeholder="Escribe tu mensaje..." rows={1}
           style={{
             flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none",
-            resize: "none", fontSize: 14, lineHeight: 1.5, color: "#1d1d1f", maxHeight: 150,
+            resize: "none", fontSize: 14, lineHeight: 1.5, color: "#48484a", maxHeight: 150,
           }}
         />
 
@@ -65,7 +65,7 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
         ) : (
           <button onClick={send} disabled={!hasText || disabled} style={{
             flexShrink: 0, width: 32, height: 32, display: "grid", placeItems: "center",
-            borderRadius: 8, background: hasText ? "#007aff" : "#e8e8ed",
+            borderRadius: 8, background: hasText ? "#48484a" : "#e8e8ed",
             border: "none", cursor: hasText ? "pointer" : "default",
             opacity: hasText ? 1 : 0.5, transition: "all 0.15s",
           }}>

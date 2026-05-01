@@ -30,7 +30,7 @@ export default function Hero() {
         {/* Title */}
         <h1 style={{
           fontSize: "clamp(48px, 8vw, 80px)", fontWeight: 600,
-          color: "#1d1d1f", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 16,
+          color: "#48484a", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 16,
         }}>
           Aeon IA
         </h1>
@@ -48,12 +48,12 @@ export default function Hero() {
             style={{
               display: "inline-flex", alignItems: "center", gap: 10,
               padding: "14px 28px", fontSize: 14, fontWeight: 500,
-              color: "#ffffff", background: "#1d1d1f",
+              color: "#ffffff", background: "#48484a",
               border: "none", borderRadius: 14, cursor: "pointer",
               boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = "#424245"; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = "#1d1d1f"; }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "#636366"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = "#48484a"; }}
           >
             Iniciar conversación
             <ArrowRight size={16} />
