@@ -86,6 +86,67 @@ export async function* parseSSEStream(
 }
 
 /**
+ * Ollama streaming generator.
+ * Connects to the Ollama API and streams Gemma 4 responses.
+ */
+export async function* ollamaStreamGenerator(
+  message: string
+): AsyncGenerator<StreamEvent, void, unknown> {
+  const baseUrl = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+  const model = process.env.OLLAMA_MODEL || "gemma4:e2b";
+
+  const response = await fetch(`${baseUrl}/api/chat`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model,
+      messages: [{ role: "user", content: message }],
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
+  }
+
+  const reader = response.body?.getReader();
+  if (!reader) throw new Error("Ollama response body is not readable");
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+
+        try {
+          const json = JSON.parse(trimmed);
+          if (json.message?.content) {
+            yield { type: "token", content: json.message.content };
+          }
+          if (json.done) {
+            return;
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/**
  * Demo streaming generator.
  * Simulates AI response word-by-word for testing without a backend.
  */

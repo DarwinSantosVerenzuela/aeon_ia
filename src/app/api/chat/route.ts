@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { ChatMessageSchema } from "@/lib/validation/schemas";
 import { validateAndSanitize } from "@/lib/security/sanitize";
 import { checkRateLimit, getClientIP } from "@/lib/security/rate-limit";
-import { createSSEStream, demoStreamGenerator } from "@/lib/ai/stream";
+import { createSSEStream, demoStreamGenerator, ollamaStreamGenerator } from "@/lib/ai/stream";
 
 /**
  * POST /api/chat
  * Streaming chat endpoint with full validation, sanitization, and rate limiting.
- * Currently runs in demo mode — will be connected to a containerized AI backend.
+ * Uses Ollama (Gemma 4) when OLLAMA_BASE_URL is set, otherwise demo mode.
  */
 export async function POST(request: NextRequest) {
   try {
@@ -55,9 +55,13 @@ export async function POST(request: NextRequest) {
     const sanitizedMessage = validateAndSanitize(validation.data.message);
 
     // 5. Create streaming response
-    // DEMO MODE: uses demoStreamGenerator
-    // PRODUCTION: replace with actual AI backend call using sovereignty layer
-    const stream = createSSEStream(() => demoStreamGenerator());
+    // Uses Ollama (Gemma 4) if configured, otherwise demo mode
+    const useOllama = !!process.env.OLLAMA_BASE_URL;
+    const stream = createSSEStream(() =>
+      useOllama
+        ? ollamaStreamGenerator(sanitizedMessage)
+        : demoStreamGenerator()
+    );
 
     return new Response(stream, {
       headers: {

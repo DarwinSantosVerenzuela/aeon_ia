@@ -1,6 +1,6 @@
 # ================================
 # Aeon IA — Docker Compose
-# Production deployment configuration
+# Production: Next.js + Ollama (Gemma 4)
 # ================================
 
 services:
@@ -8,15 +8,16 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        - NEXT_PUBLIC_AI_ENDPOINT=${NEXT_PUBLIC_AI_ENDPOINT:-}
     container_name: aeon-ia
     restart: unless-stopped
     ports:
       - "${PORT:-3000}:3000"
     environment:
       - NODE_ENV=production
-      - NEXT_PUBLIC_AI_ENDPOINT=${NEXT_PUBLIC_AI_ENDPOINT:-}
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma4:e2b}
+    depends_on:
+      - ollama
     networks:
       - aeon-network
     healthcheck:
@@ -26,25 +27,21 @@ services:
       retries: 3
       start_period: 15s
 
-  # ---- Future: AI Backend Container ----
-  # Uncomment and configure when your AI backend is ready
-  #
-  # ai-backend:
-  #   image: your-ai-image:latest
-  #   container_name: aeon-ai-backend
-  #   restart: unless-stopped
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     - MODEL_PATH=/models/your-model
-  #   volumes:
-  #     - ai-models:/models
-  #   networks:
-  #     - aeon-network
+  # ── Ollama — Gemma 4 Sovereign AI Engine ──
+  ollama:
+    image: ollama/ollama:latest
+    container_name: aeon-ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - aeon-network
 
 networks:
   aeon-network:
     driver: bridge
 
-# volumes:
-#   ai-models:
+volumes:
+  ollama_data:
