@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import type { ConnectionStatus } from "@/types";
+import AeonLogo from "@/components/ui/AeonLogo";
 
 interface ChatHeaderProps {
   status?: ConnectionStatus;
@@ -21,7 +22,7 @@ const statusConfig: Record<
 };
 
 /**
- * Chat header — centered content with consistent max-w and padding.
+ * Chat header — centered logo with consistent max-w and padding.
  */
 export default function ChatHeader({
   status = "disconnected",
@@ -44,14 +45,13 @@ export default function ChatHeader({
         <span className="text-xs tracking-wide hidden sm:inline">Inicio</span>
       </Link>
 
-      {/* Brand — always centered */}
-      <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-1.5">
-        <span className="text-sm font-medium tracking-wider text-[var(--aeon-text-primary)]">
-          Aeon
-        </span>
-        <span className="text-sm font-light tracking-wider text-[var(--aeon-text-tertiary)]">
-          IA
-        </span>
+      {/* Brand — logo oficial centrado */}
+      <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
+        <AeonLogo
+          variant="wordmark"
+          theme="dark"
+          size={22}
+        />
       </div>
 
       {/* Status */}
