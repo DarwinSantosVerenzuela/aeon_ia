@@ -2,120 +2,61 @@
 
 import { motion } from "framer-motion";
 import { Shield, Zap, Lock, Server, Eye, Fingerprint } from "lucide-react";
-import GlassCard from "@/components/ui/GlassCard";
 
 const features = [
-  {
-    icon: Shield,
-    title: "Soberanía Total",
-    description:
-      "Tus datos permanecen en tu infraestructura. Sin intermediarios, sin nubes públicas.",
-  },
-  {
-    icon: Zap,
-    title: "Streaming en Tiempo Real",
-    description:
-      "Respuestas fluidas vía SSE con latencia mínima y conexión persistente.",
-  },
-  {
-    icon: Lock,
-    title: "Seguridad por Diseño",
-    description:
-      "Validación Zod, sanitización XSS/SQL, rate-limiting y headers CSP integrados.",
-  },
-  {
-    icon: Server,
-    title: "Despliegue Privado",
-    description:
-      "Arquitectura Docker-ready para CI/CD. Tu servidor, tus reglas.",
-  },
-  {
-    icon: Eye,
-    title: "Interfaz Premium",
-    description:
-      "Glassmorphism, animaciones fluidas y una experiencia visual a nivel enterprise.",
-  },
-  {
-    icon: Fingerprint,
-    title: "Backend Agnóstico",
-    description:
-      "Conecta cualquier LLM: OpenAI, Anthropic, Ollama o tu modelo propio.",
-  },
+  { icon: Shield, title: "Tu conversación, tu control", desc: "Tu historial y tus mensajes permanecen bajo tu dominio. Sin intermediarios que accedan a lo que conversas." },
+  { icon: Zap, title: "Respuestas en tiempo real", desc: "Las respuestas fluyen token a token en el instante en que se generan. Sin esperas, sin pantallas en blanco." },
+  { icon: Lock, title: "Identidad blindada", desc: "Aeon nunca revela cómo está construido, dónde opera ni qué tecnologías usa. Tu asistente, sin filtraciones." },
+  { icon: Server, title: "Infraestructura propia", desc: "Diseñado para correr en tu servidor. Tus reglas, tu entorno, sin dependencias de plataformas externas." },
+  { icon: Eye, title: "Diseño de nivel enterprise", desc: "Interfaz premium inspirada en los estándares de las mejores plataformas del mundo. Fluida, limpia y rápida." },
+  { icon: Fingerprint, title: "Enrutamiento inteligente", desc: "Selecciona automáticamente el motor más adecuado para cada tipo de consulta. Precisión sin configuración manual." },
 ];
 
-const containerVariants = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.1,
-      delayChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] as const },
-  },
-};
-
-/**
- * Features grid with glassmorphism cards and stagger animation.
- */
 export default function Features() {
   return (
-    <section className="relative z-10 px-6 py-24 max-w-6xl mx-auto">
-      {/* Section heading */}
+    <section style={{ width: "100%", maxWidth: 960, margin: "0 auto", padding: "80px 24px 96px" }}>
       <motion.div
-        initial={{ opacity: 0, y: 16 }}
+        initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-        className="text-center mb-16"
+        viewport={{ once: true, margin: "-80px" }}
+        transition={{ duration: 0.4 }}
+        style={{ textAlign: "center", marginBottom: 48 }}
       >
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-[var(--aeon-text-primary)] mb-4">
+        <h2 style={{ fontSize: "clamp(24px, 4vw, 36px)", fontWeight: 600, color: "#48484a", marginBottom: 10 }}>
           Construido para control total
         </h2>
-        <p className="text-[var(--aeon-text-secondary)] text-lg max-w-2xl mx-auto tracking-wide font-light">
-          Cada componente diseñado con seguridad, rendimiento y privacidad como
-          prioridad absoluta.
+        <p style={{ fontSize: 15, color: "#6e6e73", maxWidth: 420, margin: "0 auto", lineHeight: 1.5 }}>
+          Cada componente diseñado con seguridad, rendimiento y privacidad como prioridad.
         </p>
       </motion.div>
 
-      {/* Features grid */}
-      <motion.div
-        variants={containerVariants}
-        initial="hidden"
-        whileInView="visible"
-        viewport={{ once: true, margin: "-80px" }}
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"
-      >
-        {features.map((feature) => (
-          <motion.div key={feature.title} variants={itemVariants}>
-            <GlassCard
-              className="p-6 h-full group cursor-default hover:bg-[var(--glass-bg-hover)] transition-all duration-300"
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-            >
-              <div className="flex flex-col gap-4">
-                <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center group-hover:bg-white/[0.08] group-hover:border-white/[0.12] transition-all duration-300">
-                  <feature.icon className="w-5 h-5 text-[var(--aeon-accent-light)]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-[var(--aeon-text-primary)] mb-2 tracking-wide">
-                    {feature.title}
-                  </h3>
-                  <p className="text-xs text-[var(--aeon-text-tertiary)] leading-relaxed tracking-wide">
-                    {feature.description}
-                  </p>
-                </div>
-              </div>
-            </GlassCard>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 12 }}>
+        {features.map((f, i) => (
+          <motion.div
+            key={f.title}
+            initial={{ opacity: 0, y: 10 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: i * 0.05, duration: 0.3 }}
+            style={{
+              display: "flex", flexDirection: "column", padding: 20, borderRadius: 16,
+              background: "#ffffff", border: "1px solid #d2d2d7", cursor: "default",
+              transition: "all 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.04)",
+            }}
+            onMouseOver={(e) => { e.currentTarget.style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; e.currentTarget.style.borderColor = "#c7c7cc"; }}
+            onMouseOut={(e) => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.04)"; e.currentTarget.style.borderColor = "#d2d2d7"; }}
+          >
+            <div style={{
+              width: 36, height: 36, borderRadius: 10, background: "#f5f5f7",
+              border: "1px solid #e8e8ed", display: "grid", placeItems: "center", marginBottom: 14,
+            }}>
+              <f.icon size={16} color="#6e6e73" />
+            </div>
+            <h3 style={{ fontSize: 14, fontWeight: 600, color: "#48484a", marginBottom: 6 }}>{f.title}</h3>
+            <p style={{ fontSize: 13, color: "#86868b", lineHeight: 1.55, flex: 1 }}>{f.desc}</p>
           </motion.div>
         ))}
-      </motion.div>
+      </div>
     </section>
   );
 }

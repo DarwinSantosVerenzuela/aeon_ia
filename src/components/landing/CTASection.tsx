@@ -3,63 +3,48 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
-import Button from "@/components/ui/Button";
 
-/**
- * Bottom CTA section with glassmorphism card and subtle gradient border.
- */
 export default function CTASection() {
   return (
-    <section className="relative z-10 px-6 py-24">
+    <section style={{ width: "100%", maxWidth: 960, margin: "0 auto", padding: "0 24px 96px" }}>
       <motion.div
-        initial={{ opacity: 0, y: 24 }}
+        initial={{ opacity: 0, y: 10 }}
         whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true, margin: "-100px" }}
-        transition={{ duration: 0.6 }}
-        className="max-w-2xl mx-auto"
+        viewport={{ once: true }}
+        transition={{ duration: 0.4 }}
+        style={{
+          maxWidth: 480, margin: "0 auto", background: "#ffffff",
+          border: "1px solid #d2d2d7", borderRadius: 24, padding: "40px 32px",
+          textAlign: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+        }}
       >
-        {/* Card with gradient border effect */}
-        <div className="relative rounded-3xl p-px overflow-hidden">
-          {/* Gradient border */}
-          <div
-            className="absolute inset-0 rounded-3xl"
+        <h3 style={{ fontSize: 22, fontWeight: 600, color: "#48484a", marginBottom: 10 }}>
+          Tu inteligencia, tu servidor
+        </h3>
+        <p style={{ fontSize: 14, color: "#6e6e73", maxWidth: 340, margin: "0 auto 28px", lineHeight: 1.5 }}>
+          Comienza a interactuar con Aeon IA. La plataforma está lista para conectarse con tu infraestructura.
+        </p>
+        <Link href="/chat" style={{ textDecoration: "none" }}>
+          <button
             style={{
-              background:
-                "linear-gradient(135deg, rgba(255,255,255,0.08) 0%, transparent 40%, transparent 60%, rgba(255,255,255,0.04) 100%)",
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "12px 24px", fontSize: 14, fontWeight: 500,
+              color: "#ffffff", background: "#48484a", border: "none",
+              borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
+              boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
             }}
-          />
-
-          {/* Card content */}
-          <div className="relative rounded-3xl bg-[var(--aeon-surface)]/80 backdrop-blur-xl p-10 sm:p-12 text-center">
-            <h3 className="text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--aeon-text-primary)] mb-4">
-              Tu inteligencia, tu servidor
-            </h3>
-            <p className="text-[var(--aeon-text-secondary)] mb-8 max-w-md mx-auto leading-relaxed tracking-wide text-sm font-light">
-              Comienza a interactuar con Aeon IA. La plataforma está lista para
-              conectarse con tu infraestructura de IA cuando lo decidas.
-            </p>
-            <Link href="/chat">
-              <Button size="lg" className="gap-3 px-8">
-                Abrir Chat
-                <ArrowRight className="w-4 h-4" />
-              </Button>
-            </Link>
-          </div>
-        </div>
+            onMouseOver={(e) => { e.currentTarget.style.background = "#636366"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = "#48484a"; }}
+          >
+            Abrir Chat
+            <ArrowRight size={15} />
+          </button>
+        </Link>
       </motion.div>
 
-      {/* Footer */}
-      <motion.footer
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ delay: 0.3, duration: 0.5 }}
-        className="mt-20 text-center"
-      >
-        <p className="text-xs text-[var(--aeon-text-muted)] tracking-[0.15em] uppercase">
-          Aeon IA — Inteligencia Soberana
-        </p>
-      </motion.footer>
+      <p style={{ marginTop: 48, textAlign: "center", fontSize: 11, color: "#aeaeb2", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>
+        Aeon IA — Inteligencia Soberana
+      </p>
     </section>
   );
 }

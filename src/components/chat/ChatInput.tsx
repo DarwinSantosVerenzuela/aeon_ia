@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, type KeyboardEvent } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import { Send, Square } from "lucide-react";
-import GlowInput from "@/components/ui/GlowInput";
-import Button from "@/components/ui/Button";
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -13,135 +10,71 @@ interface ChatInputProps {
   disabled?: boolean;
 }
 
-/**
- * Floating glass chat input bar with glow effect.
- * Positioned at the bottom of the viewport with backdrop blur.
- */
-export default function ChatInput({
-  onSend,
-  onStop,
-  isStreaming = false,
-  disabled = false,
-}: ChatInputProps) {
+export default function ChatInput({ onSend, onStop, isStreaming = false, disabled = false }: ChatInputProps) {
   const [value, setValue] = useState("");
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [focused, setFocused] = useState(false);
+  const ref = useRef<HTMLTextAreaElement>(null);
 
-  const handleSend = useCallback(() => {
-    if (!value.trim() || disabled) return;
-    onSend(value.trim());
+  const send = useCallback(() => {
+    const v = value.trim();
+    if (!v || disabled) return;
+    onSend(v);
     setValue("");
-
-    // Reset textarea height
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-    }
+    if (ref.current) ref.current.style.height = "auto";
   }, [value, disabled, onSend]);
 
-  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      if (isStreaming) return;
-      handleSend();
-    }
+  const onKey = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (!isStreaming) send(); }
   };
 
-  // Auto-resize textarea
-  const handleChange = (newValue: string) => {
-    setValue(newValue);
-    if (textareaRef.current) {
-      textareaRef.current.style.height = "auto";
-      textareaRef.current.style.height = `${Math.min(
-        textareaRef.current.scrollHeight,
-        200
-      )}px`;
-    }
+  const onChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setValue(e.target.value);
+    const el = ref.current;
+    if (el) { el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 150)}px`; }
   };
+
+  const hasText = value.trim().length > 0;
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.2 }}
-      className="sticky bottom-0 z-40 px-4 pb-5 pt-3"
-    >
-      {/* Background blur */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[var(--aeon-bg)] via-[var(--aeon-bg)]/90 to-transparent pointer-events-none" />
+    <div>
+      <div style={{
+        display: "flex", alignItems: "flex-end", gap: 12,
+        padding: "12px 16px", borderRadius: 16,
+        background: "#f5f5f7",
+        border: focused ? "1px solid #86868b" : "1px solid #d2d2d7",
+        transition: "all 0.2s",
+      }}>
+        <textarea
+          ref={ref} value={value} onChange={onChange} onKeyDown={onKey}
+          onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+          disabled={disabled} placeholder="Escribe tu mensaje..." rows={1}
+          style={{
+            flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none",
+            resize: "none", fontSize: 14, lineHeight: 1.5, color: "#48484a", maxHeight: 150,
+          }}
+        />
 
-      <div className="relative max-w-3xl mx-auto">
-        <div className="flex items-end gap-3">
-          {/* Input */}
-          <div className="flex-1">
-            <GlowInput
-              ref={textareaRef}
-              value={value}
-              onValueChange={handleChange}
-              onKeyDown={handleKeyDown}
-              placeholder="Escribe tu mensaje..."
-              isActive={value.length > 0}
-              disabled={disabled}
-              aria-label="Chat message input"
-            />
-          </div>
-
-          {/* Send / Stop button */}
-          <AnimatePresence mode="wait">
-            {isStreaming ? (
-              <motion.div
-                key="stop"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button
-                  variant="glass"
-                  size="md"
-                  onClick={onStop}
-                  className="h-[52px] w-[52px] !p-0 rounded-2xl"
-                  aria-label="Stop generation"
-                >
-                  <Square className="w-4 h-4 fill-current" />
-                </Button>
-              </motion.div>
-            ) : (
-              <motion.div
-                key="send"
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.8, opacity: 0 }}
-                transition={{ duration: 0.15 }}
-              >
-                <Button
-                  variant={value.trim() ? "primary" : "glass"}
-                  size="md"
-                  onClick={handleSend}
-                  disabled={!value.trim() || disabled}
-                  className="h-[52px] w-[52px] !p-0 rounded-2xl"
-                  aria-label="Send message"
-                >
-                  <motion.span
-                    animate={
-                      value.trim()
-                        ? { rotate: 0, scale: 1 }
-                        : { rotate: 0, scale: 0.9 }
-                    }
-                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
-                  >
-                    <Send className="w-4 h-4" />
-                  </motion.span>
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Bottom hint */}
-        <div className="mt-2 text-center">
-          <span className="text-[10px] text-[var(--aeon-text-muted)] tracking-wider">
-            Enter para enviar · Shift+Enter para nueva línea
-          </span>
-        </div>
+        {isStreaming ? (
+          <button onClick={onStop} style={{
+            flexShrink: 0, width: 32, height: 32, display: "grid", placeItems: "center",
+            borderRadius: 8, background: "#e8e8ed", border: "none", cursor: "pointer",
+          }}>
+            <Square size={14} color="#6e6e73" fill="#6e6e73" />
+          </button>
+        ) : (
+          <button onClick={send} disabled={!hasText || disabled} style={{
+            flexShrink: 0, width: 32, height: 32, display: "grid", placeItems: "center",
+            borderRadius: 8, background: hasText ? "#48484a" : "#e8e8ed",
+            border: "none", cursor: hasText ? "pointer" : "default",
+            opacity: hasText ? 1 : 0.5, transition: "all 0.15s",
+          }}>
+            <Send size={14} color={hasText ? "#ffffff" : "#aeaeb2"} />
+          </button>
+        )}
       </div>
-    </motion.div>
+      <p style={{ marginTop: 8, textAlign: "center", fontSize: 11, color: "#aeaeb2" }}>
+        Enter para enviar · Shift+Enter para nueva línea
+      </p>
+    </div>
   );
 }

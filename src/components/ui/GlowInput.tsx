@@ -34,8 +34,8 @@ const GlowInput = forwardRef<HTMLTextAreaElement, GlowInputProps>(
               animate={{
                 opacity: 1,
                 boxShadow: hasContent
-                  ? "0 0 30px rgba(174,174,178,0.15), 0 0 60px rgba(174,174,178,0.05), inset 0 0 20px rgba(255,255,255,0.02)"
-                  : "0 0 20px rgba(174,174,178,0.08), 0 0 40px rgba(174,174,178,0.03)",
+                  ? "0 0 30px rgba(200,200,210,0.15), 0 0 60px rgba(200,200,210,0.05)"
+                  : "0 0 20px rgba(200,200,210,0.1), 0 0 40px rgba(200,200,210,0.03)",
               }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
@@ -50,7 +50,7 @@ const GlowInput = forwardRef<HTMLTextAreaElement, GlowInputProps>(
               className="absolute -inset-[1px] rounded-2xl pointer-events-none"
               style={{
                 background:
-                  "linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 50%, rgba(255,255,255,0.05) 100%)",
+                  "linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%, rgba(255,255,255,0.08) 100%)",
                 mask: "linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0)",
                 maskComposite: "exclude",
                 WebkitMaskComposite: "xor",
@@ -68,14 +68,14 @@ const GlowInput = forwardRef<HTMLTextAreaElement, GlowInputProps>(
           ref={ref}
           className={cn(
             "relative z-10 w-full",
-            "bg-white/[0.03] backdrop-blur-xl",
-            "border border-white/[0.06]",
+            "bg-white/[0.06] backdrop-blur-xl",
+            "border border-white/[0.1]",
             "rounded-2xl px-5 py-4",
-            "text-[var(--aeon-text-primary)] text-sm",
+            "text-[var(--aeon-text-primary)] text-sm leading-relaxed",
             "placeholder:text-[var(--aeon-text-muted)]",
             "resize-none outline-none",
             "transition-all duration-300",
-            "focus:border-white/[0.12]",
+            "focus:border-white/[0.18] focus:bg-white/[0.08]",
             "selection:bg-white/10",
             className
           )}
