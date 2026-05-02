@@ -80,7 +80,7 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
         <meta name="msapplication-TileColor" content="#3d3d3d" />
       </head>
-      <body className="min-h-full flex flex-col" style={{ background: "#0a0a0f", color: "#e5e7eb" }}>
+      <body className="min-h-full flex flex-col" style={{ background: "#f5f5f7", color: "#48484a" }}>
         {children}
         {/* Service Worker registration */}
         <script

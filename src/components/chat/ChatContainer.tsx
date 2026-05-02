@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageCircle, ArrowLeft, Pin, Menu, ThumbsUp } from "lucide-react";
+import AeonLogo from "@/components/ui/AeonLogo";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
 import { usePinnedMessages } from "@/hooks/usePinnedMessages";
@@ -122,8 +123,7 @@ export default function ChatContainer() {
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
         }}>
-          <span style={{ fontSize: 15, fontWeight: 600, color: "#48484a" }}>Aeon</span>
-          <span style={{ fontSize: 15, fontWeight: 300, color: "#86868b" }}>IA</span>
+          <AeonLogo variant="wordmark" theme="dark" height={16} />
         </div>
 
         {/* RIGHT */}
@@ -185,7 +185,7 @@ export default function ChatContainer() {
               <div style={{ width: 64, height: 64, borderRadius: 18, background: "#fff", border: "1px solid #d2d2d7", display: "grid", placeItems: "center", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
                 <MessageCircle size={26} color="#86868b" />
               </div>
-              <h1 style={{ fontSize: 24, fontWeight: 600, color: "#48484a", marginBottom: 6 }}>Aeon IA</h1>
+              <div style={{ marginBottom: 6 }}><AeonLogo variant="wordmark" theme="dark" height={28} /></div>
               <p style={{ fontSize: 15, color: "#6e6e73", maxWidth: 340, lineHeight: 1.5, marginBottom: 32 }}>
                 Inicia una conversación. Tus mensajes son procesados de forma segura y soberana.
               </p>
