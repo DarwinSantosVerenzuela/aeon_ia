@@ -45,7 +45,7 @@ export default function CTASection() {
 
       {/* Footer brand */}
       <div style={{ marginTop: 48, display: "flex", justifyContent: "center" }}>
-        <AeonLogo variant="wordmark" theme="dark" size={16} style={{ opacity: 0.35 }} />
+        <AeonLogo variant="wordmark" theme="dark" height={24} style={{ opacity: 0.3 }} />
       </div>
     </section>
   );

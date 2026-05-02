@@ -50,7 +50,7 @@ export default function ChatHeader({
         <AeonLogo
           variant="wordmark"
           theme="dark"
-          size={22}
+          height={18}
         />
       </div>
 
