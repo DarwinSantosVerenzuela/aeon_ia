@@ -123,7 +123,13 @@ export default function ChatContainer() {
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
           border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
         }}>
-          <AeonLogo variant="wordmark" theme="dark" height={16} />
+          <span style={{
+            fontFamily: "'Baskerville Old Face', Baskerville, 'Palatino Linotype', Palatino, serif",
+            fontSize: 18,
+            fontWeight: 400,
+            letterSpacing: "0.02em",
+            color: "#3d3d3d",
+          }}>aeon</span>
         </div>
 
         {/* RIGHT */}
