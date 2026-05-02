@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
+import AeonLogo from "@/components/ui/AeonLogo";
 
 export default function CTASection() {
   return (
@@ -29,12 +30,12 @@ export default function CTASection() {
             style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "12px 24px", fontSize: 14, fontWeight: 500,
-              color: "#ffffff", background: "#48484a", border: "none",
+              color: "#ffffff", background: "#3d3d3d", border: "none",
               borderRadius: 12, cursor: "pointer", transition: "all 0.15s",
               boxShadow: "0 2px 6px rgba(0,0,0,0.1)",
             }}
-            onMouseOver={(e) => { e.currentTarget.style.background = "#636366"; }}
-            onMouseOut={(e) => { e.currentTarget.style.background = "#48484a"; }}
+            onMouseOver={(e) => { e.currentTarget.style.background = "#555558"; }}
+            onMouseOut={(e) => { e.currentTarget.style.background = "#3d3d3d"; }}
           >
             Abrir Chat
             <ArrowRight size={15} />
@@ -42,9 +43,10 @@ export default function CTASection() {
         </Link>
       </motion.div>
 
-      <p style={{ marginTop: 48, textAlign: "center", fontSize: 11, color: "#aeaeb2", letterSpacing: "0.12em", textTransform: "uppercase" as const }}>
-        Aeon IA — Inteligencia Soberana
-      </p>
+      {/* Footer brand */}
+      <div style={{ marginTop: 48, display: "flex", justifyContent: "center" }}>
+        <AeonLogo variant="wordmark" theme="dark" size={16} style={{ opacity: 0.35 }} />
+      </div>
     </section>
   );
 }

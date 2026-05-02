@@ -3,15 +3,16 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
+import AeonLogo from "@/components/ui/AeonLogo";
 
 export default function Hero() {
   const router = useRouter();
 
   const handleStart = () => {
-    // Always start a fresh conversation from the landing page
     sessionStorage.removeItem("aeon-active-conv");
     router.push("/chat");
   };
+
   return (
     <section style={{
       minHeight: "100vh", display: "grid", placeItems: "center",
@@ -99,7 +100,7 @@ export default function Hero() {
         }}
       >
         {/* Badge */}
-        <div style={{ marginBottom: 28 }}>
+        <div style={{ marginBottom: 32 }}>
           <span style={{
             display: "inline-flex", alignItems: "center", gap: 8,
             padding: "8px 16px", borderRadius: 100, fontSize: 11,
@@ -115,13 +116,10 @@ export default function Hero() {
           </span>
         </div>
 
-        {/* Title */}
-        <h1 style={{
-          fontSize: "clamp(48px, 8vw, 80px)", fontWeight: 600,
-          color: "#48484a", letterSpacing: "-0.02em", lineHeight: 1.1, marginBottom: 16,
-        }}>
-          Aeon IA
-        </h1>
+        {/* Logo — oficial brand identity */}
+        <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
+          <AeonLogo variant="wordmark" theme="dark" size={52} />
+        </div>
 
         {/* Subtitle */}
         <p style={{
@@ -140,12 +138,12 @@ export default function Hero() {
           style={{
             display: "inline-flex", alignItems: "center", gap: 10,
             padding: "14px 28px", fontSize: 14, fontWeight: 500,
-            color: "#ffffff", background: "#48484a",
+            color: "#ffffff", background: "#3d3d3d",
             border: "none", borderRadius: 14, cursor: "pointer",
             boxShadow: "0 2px 8px rgba(0,0,0,0.12)",
           }}
-          onMouseOver={(e) => { e.currentTarget.style.background = "#636366"; }}
-          onMouseOut={(e) => { e.currentTarget.style.background = "#48484a"; }}
+          onMouseOver={(e) => { e.currentTarget.style.background = "#555558"; }}
+          onMouseOut={(e) => { e.currentTarget.style.background = "#3d3d3d"; }}
         >
           Iniciar conversación
           <ArrowRight size={16} />
