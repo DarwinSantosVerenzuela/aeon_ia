@@ -40,19 +40,20 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
       { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
       { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/icons/icon-192x192.png",
+    shortcut: "/favicon-32x32.png",
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#6366f1",
+  themeColor: "#3d3d3d",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -72,11 +73,12 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Aeon IA" />
-        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
         {/* MS Tiles */}
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
-        <meta name="msapplication-TileColor" content="#6366f1" />
+        <meta name="msapplication-TileColor" content="#3d3d3d" />
       </head>
       <body className="min-h-full flex flex-col" style={{ background: "#0a0a0f", color: "#e5e7eb" }}>
         {children}
