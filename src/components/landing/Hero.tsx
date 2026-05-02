@@ -118,7 +118,7 @@ export default function Hero() {
 
         {/* Logo — oficial brand identity */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          <AeonLogo variant="wordmark" theme="dark" size={52} />
+          <AeonLogo variant="wordmark" theme="dark" height={48} />
         </div>
 
         {/* Subtitle */}
