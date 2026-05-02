@@ -19,13 +19,15 @@ export function useStreamingResponse() {
       conversationId?: string,
       onToken?: (content: string) => void,
       onComplete?: (fullContent: string) => void,
-      onError?: (error: string) => void
+      onError?: (error: string) => void,
+      onModelInfo?: (modelName: string, modelSpecialty: string) => void
     ) => {
       setIsStreaming(true);
       setStreamedContent("");
       abortRef.current = new AbortController();
 
       let accumulated = "";
+      let modelInfoSent = false;
 
       try {
         const response = await fetch("/api/chat", {
@@ -40,10 +42,17 @@ export function useStreamingResponse() {
         }
 
         for await (const event of parseSSEStream(response)) {
-          if (event.type === "token" && event.content) {
-            accumulated += event.content;
-            setStreamedContent(accumulated);
-            onToken?.(event.content);
+          if (event.type === "token") {
+            // Capture model info from first event
+            if (!modelInfoSent && event.model) {
+              onModelInfo?.(event.model, event.specialty || "");
+              modelInfoSent = true;
+            }
+            if (event.content) {
+              accumulated += event.content;
+              setStreamedContent(accumulated);
+              onToken?.(event.content);
+            }
           } else if (event.type === "error") {
             onError?.(event.error || "Stream error");
             break;

@@ -8,7 +8,7 @@ import CTASection from "@/components/landing/CTASection";
  */
 export default function HomePage() {
   return (
-    <main className="relative noise-overlay">
+    <main className="relative">
       <Hero />
       <Features />
       <CTASection />
