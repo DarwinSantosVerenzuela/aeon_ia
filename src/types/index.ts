@@ -8,6 +8,8 @@ export interface ChatMessage {
   content: string;
   timestamp: number;
   isStreaming?: boolean;
+  modelName?: string;
+  modelSpecialty?: string;
 }
 
 /** Conversation state */
@@ -32,6 +34,8 @@ export interface StreamEvent {
   type: "token" | "done" | "error";
   content?: string;
   error?: string;
+  model?: string;
+  specialty?: string;
 }
 
 /** API request payload */

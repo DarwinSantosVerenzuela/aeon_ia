@@ -2,12 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { ChatMessageSchema } from "@/lib/validation/schemas";
 import { validateAndSanitize } from "@/lib/security/sanitize";
 import { checkRateLimit, getClientIP } from "@/lib/security/rate-limit";
-import { createSSEStream, demoStreamGenerator, ollamaStreamGenerator } from "@/lib/ai/stream";
+import {
+  createSSEStream,
+  demoStreamGenerator,
+  ollamaStreamGenerator,
+  openRouterStreamGenerator,
+} from "@/lib/ai/stream";
+
+/**
+ * Resolve which AI provider to use.
+ * Priority: AI_PROVIDER env → auto-detect → demo fallback.
+ */
+function getAIProvider(): "openrouter" | "ollama" | "demo" {
+  const explicit = process.env.AI_PROVIDER?.toLowerCase();
+  if (explicit === "openrouter" || explicit === "ollama" || explicit === "demo") {
+    return explicit;
+  }
+  // Auto-detect: prefer OpenRouter if key exists, then Ollama, then demo
+  if (process.env.OPENROUTER_API_KEY) return "openrouter";
+  if (process.env.OLLAMA_BASE_URL) return "ollama";
+  return "demo";
+}
 
 /**
  * POST /api/chat
  * Streaming chat endpoint with full validation, sanitization, and rate limiting.
- * Uses Ollama (Gemma 4) when OLLAMA_BASE_URL is set, otherwise demo mode.
+ * Supports: OpenRouter (cloud), Ollama (self-hosted), Demo (testing).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -54,14 +74,19 @@ export async function POST(request: NextRequest) {
     // 4. Sanitize input
     const sanitizedMessage = validateAndSanitize(validation.data.message);
 
-    // 5. Create streaming response
-    // Uses Ollama (Gemma 4) if configured, otherwise demo mode
-    const useOllama = !!process.env.OLLAMA_BASE_URL;
-    const stream = createSSEStream(() =>
-      useOllama
-        ? ollamaStreamGenerator(sanitizedMessage)
-        : demoStreamGenerator()
-    );
+    // 5. Select AI provider and create streaming response
+    const provider = getAIProvider();
+
+    const stream = createSSEStream(() => {
+      switch (provider) {
+        case "openrouter":
+          return openRouterStreamGenerator(sanitizedMessage);
+        case "ollama":
+          return ollamaStreamGenerator(sanitizedMessage);
+        default:
+          return demoStreamGenerator();
+      }
+    });
 
     return new Response(stream, {
       headers: {
@@ -70,6 +95,7 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
         "X-Content-Type-Options": "nosniff",
         "X-RateLimit-Remaining": rateLimit.remaining.toString(),
+        "X-AI-Provider": provider,
       },
     });
   } catch (error) {

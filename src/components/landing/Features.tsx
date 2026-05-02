@@ -4,12 +4,12 @@ import { motion } from "framer-motion";
 import { Shield, Zap, Lock, Server, Eye, Fingerprint } from "lucide-react";
 
 const features = [
-  { icon: Shield, title: "Soberanía Total", desc: "Tus datos permanecen en tu infraestructura. Sin intermediarios, sin nubes públicas." },
-  { icon: Zap, title: "Streaming en Tiempo Real", desc: "Respuestas fluidas vía Server-Sent Events con latencia mínima." },
-  { icon: Lock, title: "Seguridad por Diseño", desc: "Validación Zod, sanitización XSS/SQL, rate-limiting y headers CSP." },
-  { icon: Server, title: "Despliegue Privado", desc: "Arquitectura Docker-ready para CI/CD. Tu servidor, tus reglas." },
-  { icon: Eye, title: "Interfaz Premium", desc: "Animaciones fluidas y experiencia visual a nivel enterprise." },
-  { icon: Fingerprint, title: "Backend Agnóstico", desc: "Conecta cualquier LLM: OpenAI, Anthropic, Ollama o tu modelo." },
+  { icon: Shield, title: "Tu conversación, tu control", desc: "Tu historial y tus mensajes permanecen bajo tu dominio. Sin intermediarios que accedan a lo que conversas." },
+  { icon: Zap, title: "Respuestas en tiempo real", desc: "Las respuestas fluyen token a token en el instante en que se generan. Sin esperas, sin pantallas en blanco." },
+  { icon: Lock, title: "Identidad blindada", desc: "Aeon nunca revela cómo está construido, dónde opera ni qué tecnologías usa. Tu asistente, sin filtraciones." },
+  { icon: Server, title: "Infraestructura propia", desc: "Diseñado para correr en tu servidor. Tus reglas, tu entorno, sin dependencias de plataformas externas." },
+  { icon: Eye, title: "Diseño de nivel enterprise", desc: "Interfaz premium inspirada en los estándares de las mejores plataformas del mundo. Fluida, limpia y rápida." },
+  { icon: Fingerprint, title: "Enrutamiento inteligente", desc: "Selecciona automáticamente el motor más adecuado para cada tipo de consulta. Precisión sin configuración manual." },
 ];
 
 export default function Features() {

@@ -40,9 +40,8 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
       <div style={{
         display: "flex", alignItems: "flex-end", gap: 12,
         padding: "12px 16px", borderRadius: 16,
-        background: "#ffffff",
+        background: "#f5f5f7",
         border: focused ? "1px solid #86868b" : "1px solid #d2d2d7",
-        boxShadow: focused ? "0 0 0 3px rgba(0,0,0,0.06)" : "0 1px 3px rgba(0,0,0,0.06)",
         transition: "all 0.2s",
       }}>
         <textarea
