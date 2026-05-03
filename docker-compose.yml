@@ -1,49 +1,30 @@
 # ================================
 # Aeon IA — Docker Compose (Production)
-# Secrets injected via GitHub Actions / environment
+# Variables inyectadas via GitHub Secrets / .env
 # ================================
 
 services:
   aeon-ia:
-    image: ghcr.io/${GITHUB_REPOSITORY:-darwinsantosverenzuela/aeon-ia}:latest
+    image: ghcr.io/darwinsantosverenzuela/aeon_ia:latest
     container_name: aeon-ia
     restart: unless-stopped
     ports:
-      - "${PORT:-3000}:3000"
+      - "3009:3000"
     environment:
       - NODE_ENV=production
       - AI_PROVIDER=${AI_PROVIDER:-openrouter}
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-3-27b-it:free}
-      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
+      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}
     networks:
       - aeon-network
-    mem_limit: 128m
+    mem_limit: 256m
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 15s
-
-  # ── Ollama — Sovereign AI Engine (optional) ──
-  ollama:
-    image: ollama/ollama:latest
-    container_name: aeon-ollama
-    restart: unless-stopped
-    ports:
-      - "11434:11434"
-    volumes:
-      - ollama_data:/root/.ollama
-    networks:
-      - aeon-network
-    profiles:
-      - sovereign
+      start_period: 20s
 
 networks:
   aeon-network:
     driver: bridge
-
-volumes:
-  ollama_data:
