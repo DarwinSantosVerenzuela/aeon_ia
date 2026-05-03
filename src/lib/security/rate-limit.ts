@@ -13,8 +13,8 @@ interface TokenBucket {
 
 const buckets = new Map<string, TokenBucket>();
 
-/** Default: 20 requests per 60-second window */
-const MAX_TOKENS = 20;
+/** Default: 40 requests per 60-second window */
+const MAX_TOKENS = 40;
 const REFILL_INTERVAL_MS = 60_000;
 
 /**

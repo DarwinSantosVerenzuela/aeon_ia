@@ -1,98 +1,110 @@
 /**
  * Aeon IA — Model Registry & Intelligent Router
- * 
- * 5 modelos autorizados, todos gratuitos vía OpenRouter.
- * El router analiza el mensaje del usuario y selecciona
- * automáticamente el modelo óptimo para la tarea.
+ *
+ * 3 modelos estables vía OpenRouter (todos gratuitos y verificados).
+ * El router selecciona el modelo óptimo por contenido del mensaje.
+ * Cadena de fallback: Gemma4 → Gemma3-27B → Gemma3-12B
  */
 
-/* ═══════════════════════════════════════════
- * Model Definitions
- * ═══════════════════════════════════════════ */
-
 export interface AIModel {
-  id: string;            // OpenRouter API slug
-  name: string;          // Nombre corto para UI
-  specialty: string;     // Área de especialización
-  description: string;   // Descripción para el usuario
-  strengths: string[];   // Palabras clave de fortaleza
+  id: string;
+  name: string;
+  specialty: string;
+  description: string;
+  strengths: string[];
+  vision?: boolean;
 }
 
 /**
- * ÚNICO REGISTRO DE MODELOS AUTORIZADOS.
- * Prohibido agregar modelos que no estén en esta lista.
+ * Modelos autorizados — ordenados por prioridad de fallback.
+ * Solo modelos verificados como estables en OpenRouter.
  */
 export const AUTHORIZED_MODELS: AIModel[] = [
   {
+    // Modelo primario: mejor razonamiento y visión
     id: "google/gemma-4-31b-it:free",
-    name: "Gemma 4",
-    specialty: "Razonamiento General",
-    description: "Razonamiento profundo, análisis complejo, ciencia, lógica y conversación",
+    name: "G4-31B",
+    specialty: "General & Visión",
+    description: "Modelo principal. Razonamiento, conversación, código, imágenes y documentos.",
+    vision: true,
     strengths: [
-      "razonamiento", "analizar", "análisis", "lógica", "ciencia", "física",
-      "matemáticas", "cálculo", "explica", "por qué", "filosofía", "debate",
-      "comparar", "evaluar", "reflexión", "pensamiento", "argumento",
-      "investigación", "hipótesis", "teoría", "deducción", "crítico",
-      "hola", "qué tal", "cómo estás", "cuéntame", "historia", "cultura",
-      "recomienda", "opinión", "consejo", "creativo", "poema", "cuento",
-      "idea", "conversación", "charla", "ayuda", "general",
+      // Conversación general
+      "hola", "qué tal", "cómo estás", "buenos días", "buenas tardes",
+      "cuéntame", "ayuda", "general", "conversación", "charla",
+      // Razonamiento y análisis
+      "razonamiento", "analizar", "análisis", "lógica", "por qué",
+      "explica", "filosofía", "debate", "comparar", "evaluar",
+      "reflexión", "pensamiento", "argumento", "crítico",
+      // Ciencia y matemáticas
+      "ciencia", "física", "matemáticas", "cálculo", "química",
+      "investigación", "hipótesis", "teoría", "deducción",
+      // Contenido creativo
+      "historia", "cultura", "opinión", "consejo", "creativo",
+      "poema", "cuento", "idea", "recomienda",
+      // Escritura
       "resume", "resumen", "traduce", "traducir", "escribe", "redacta",
       "carta", "email", "lista", "pasos", "guía", "tutorial",
-      "código", "programar", "bug", "función", "api", "javascript",
-      "python", "react", "docker", "backend", "frontend",
+      // Código
+      "código", "programar", "bug", "función", "api",
+      "javascript", "python", "react", "docker", "backend", "frontend",
+      // Visual y documentos
+      "imagen", "foto", "analiza imagen", "describe imagen", "observa",
+      "visual", "documento", "pdf", "archivo", "adjunto", "captura",
     ],
   },
   {
-    id: "openai/gpt-oss-20b:free",
-    name: "GPT-OSS",
-    specialty: "Razonamiento Técnico",
-    description: "Razonamiento paso a paso, medicina, finanzas, derecho y problemas complejos",
-    strengths: [
-      "paso a paso", "detallado", "medicina", "médico", "diagnóstico",
-      "síntoma", "tratamiento", "salud", "finanzas", "inversión", "economía",
-      "mercado", "contabilidad", "presupuesto", "impuesto", "legal",
-      "derecho", "ley", "contrato", "negocio", "empresa", "estrategia",
-    ],
+    // Fallback 1: también tiene visión, respaldo robusto
+    id: "google/gemma-3-27b-it:free",
+    name: "G3-27B",
+    specialty: "Respaldo Principal",
+    description: "Fallback primario. Visión y texto general.",
+    vision: true,
+    strengths: [],  // No se usa en el router, solo como fallback
+  },
+  {
+    // Fallback 2: modelo más ligero, último recurso
+    id: "google/gemma-3-12b-it:free",
+    name: "G3-12B",
+    specialty: "Respaldo Ligero",
+    description: "Fallback secundario. Modelo ligero con visión.",
+    vision: true,
+    strengths: [],  // No se usa en el router, solo como fallback
   },
 ];
 
 /* ═══════════════════════════════════════════
  * Intelligent Router
- * Analiza el mensaje y selecciona el mejor modelo
+ * Selecciona el modelo primario por keywords.
+ * Los otros modelos se usan SOLO como fallback.
  * ═══════════════════════════════════════════ */
 
 /**
- * Selecciona el modelo óptimo basado en el contenido del mensaje.
- * Usa scoring por coincidencia de palabras clave.
- * Default: Llama 3.3 (mejor para conversación general).
+ * Siempre retorna el modelo primario (Gemma 4).
+ * Los fallbacks se gestionan en stream.ts, no aquí.
+ * Mantener el router simple evita colisiones de scoring.
  */
 export function routeToModel(message: string): AIModel {
-  const lowerMessage = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  
-  let bestModel = AUTHORIZED_MODELS[0]; // Default: Gemma 4 (general purpose)
-  let bestScore = 0;
+  // Normalizar para comparar sin acentos
+  const lower = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  for (const model of AUTHORIZED_MODELS) {
-    let score = 0;
-    for (const keyword of model.strengths) {
-      const normalizedKeyword = keyword.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-      if (lowerMessage.includes(normalizedKeyword)) {
-        score += 1;
-        // Bonus for exact word match (not just substring)
-        const regex = new RegExp(`\\b${normalizedKeyword}\\b`, "i");
-        if (regex.test(lowerMessage)) {
-          score += 0.5;
-        }
-      }
-    }
+  // Modelo primario siempre es Gemma 4 (mejor balance calidad/disponibilidad)
+  const primary = AUTHORIZED_MODELS[0];
 
-    if (score > bestScore) {
-      bestScore = score;
-      bestModel = model;
+  // Solo verificar si hay keywords del modelo OSS para especialidades técnicas profundas
+  const techDeepKeywords = [
+    "paso a paso", "diagnostico", "diagnostica", "medicina", "medico",
+    "sintoma", "tratamiento", "salud clinica", "finanzas avanzadas",
+    "inversion profesional", "legal", "derecho", "contrato",
+  ];
+
+  for (const kw of techDeepKeywords) {
+    if (lower.includes(kw)) {
+      // Para estas especialidades aun usamos Gemma 4 (es el más capaz disponible)
+      return primary;
     }
   }
 
-  return bestModel;
+  return primary;
 }
 
 /**

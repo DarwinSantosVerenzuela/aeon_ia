@@ -65,13 +65,22 @@ export function sanitizeInput(input: string): string {
 }
 
 /**
- * Full validation pipeline: validate + sanitize.
+ * Full validation pipeline: validate + sanitize for API consumption.
  * Returns sanitized input or throws with a descriptive error.
+ * 
+ * NOTA: NO hace encodeHTML porque el mensaje va a una API (OpenRouter),
+ * no a un render HTML. Encoding HTML corrompía los mensajes con &amp; &lt; etc.
  */
 export function validateAndSanitize(input: string): string {
   if (!isSafeInput(input)) {
     throw new Error("Input contains potentially dangerous content");
   }
 
-  return sanitizeInput(input);
+  // Solo strip patrones peligrosos, sin encoding HTML
+  let sanitized = input.trim();
+  for (const pattern of DANGEROUS_PATTERNS) {
+    sanitized = sanitized.replace(pattern, "");
+    pattern.lastIndex = 0;
+  }
+  return sanitized;
 }
