@@ -206,8 +206,12 @@ export async function* openRouterStreamGenerator(
     ];
   }
 
+  const TAG = "[AeonAI]";
+  console.log(`${TAG} Iniciando pipeline. Modelos disponibles: ${fallbackOrder.length}. API key presente: ${!!apiKey}`);
+
   for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
     const model = fallbackOrder[attempt];
+    console.log(`${TAG} Intento ${attempt + 1}/${fallbackOrder.length} — Modelo: ${model.name} (${model.id})`);
 
     // Delay fijo corto entre modelos — evita saturar la API sin bloquear el servidor
     if (attempt > 0) {
@@ -215,9 +219,12 @@ export async function* openRouterStreamGenerator(
     }
 
     try {
-      // Timeout de 30 segundos para evitar cuelgues en producción
+      // Timeout de 25 segundos para evitar cuelgues en producción
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30_000);
+      const timeoutId = setTimeout(() => {
+        console.warn(`${TAG} ⏱ Timeout 25s en modelo ${model.name}. Pasando al siguiente.`);
+        controller.abort();
+      }, 25_000);
 
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -241,16 +248,40 @@ export async function* openRouterStreamGenerator(
 
       clearTimeout(timeoutId);
 
-      // Si rate limited (429), server error (5xx), o not found (404), intenta el siguiente modelo
-      if (response.status === 429 || response.status === 404 || response.status >= 500) {
+      console.log(`${TAG} Respuesta HTTP ${response.status} de ${model.name}`);
+
+      // Leer body del error para diagnosticar
+      if (response.status === 401) {
+        const errBody = await response.text();
+        console.error(`${TAG} ❌ 401 Unauthorized — API key inválida o expirada. Body: ${errBody.slice(0, 300)}`);
+        throw new Error("API key inválida");
+      }
+
+      if (response.status === 429) {
+        const retryAfter = response.headers.get("retry-after") || "?";
+        console.warn(`${TAG} ⚠ 429 Rate Limited en ${model.name}. Retry-After: ${retryAfter}s. Pasando al siguiente.`);
+        continue;
+      }
+
+      if (response.status === 404) {
+        console.warn(`${TAG} ⚠ 404 Modelo no encontrado: ${model.id}. Pasando al siguiente.`);
+        continue;
+      }
+
+      if (response.status >= 500) {
+        const errBody = await response.text();
+        console.error(`${TAG} ❌ ${response.status} Error servidor OpenRouter en ${model.name}. Body: ${errBody.slice(0, 300)}`);
         continue;
       }
 
       if (!response.ok) {
+        const errBody = await response.text();
+        console.error(`${TAG} ❌ HTTP ${response.status} inesperado en ${model.name}. Body: ${errBody.slice(0, 300)}`);
         continue;
       }
 
       // Success — start streaming (never send model identity to client)
+      console.log(`${TAG} ✅ Streaming iniciado con ${model.name}`);
       yield {
         type: "token",
         content: "",
@@ -262,6 +293,7 @@ export async function* openRouterStreamGenerator(
 
       const decoder = new TextDecoder();
       let buffer = "";
+      let tokenCount = 0;
 
       try {
         while (true) {
@@ -275,12 +307,16 @@ export async function* openRouterStreamGenerator(
           for (const line of lines) {
             const trimmed = line.trim();
             if (!trimmed.startsWith("data: ")) continue;
-            if (trimmed === "data: [DONE]") return;
+            if (trimmed === "data: [DONE]") {
+              console.log(`${TAG} ✅ Stream completado. Tokens emitidos: ${tokenCount}`);
+              return;
+            }
 
             try {
               const json = JSON.parse(trimmed.slice(6));
               const content = json.choices?.[0]?.delta?.content;
               if (content) {
+                tokenCount++;
                 yield { type: "token", content };
               }
             } catch {
@@ -288,18 +324,23 @@ export async function* openRouterStreamGenerator(
             }
           }
         }
+        console.log(`${TAG} ✅ Stream completado (done=true). Tokens emitidos: ${tokenCount}`);
       } finally {
         reader.releaseLock();
       }
 
       return; // Successfully streamed — exit
-    } catch {
-      // Network error, timeout, or abort — try next model
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      // Si es el error de API key, lanzar inmediatamente sin seguir intentando
+      if (errMsg === "API key inválida") throw new Error("API key inválida");
+      console.error(`${TAG} ❌ Excepción en ${model.name}: ${errMsg}`);
       continue;
     }
   }
 
-  // All models failed — never reveal model names to the user
+  // All models failed
+  console.error(`${TAG} 🚨 Todos los modelos fallaron. Lanzando error al usuario.`);
   throw new Error("El servicio está temporalmente saturado. Por favor intenta de nuevo en unos segundos.");
 }
 
