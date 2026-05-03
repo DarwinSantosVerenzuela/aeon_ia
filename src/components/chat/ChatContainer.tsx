@@ -122,28 +122,29 @@ export default function ChatContainer() {
             boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
           }}
         >
-          {/* Símbolo (asterisco) — visible solo en móvil */}
+          {/* Símbolo (asterisco) — CSS controla visibility: block en móvil, none en desktop */}
           <img
             src="/brand/symbol-dark.png"
             alt="aeon"
             className="aeon-header-symbol"
-            style={{ height: 20, width: 20, display: "none", userSelect: "none", objectFit: "contain" }}
+            style={{ height: 20, width: 20, userSelect: "none", objectFit: "contain" }}
             draggable={false}
           />
-          {/* Wordmark completo — visible en desktop */}
+          {/* Wordmark completo — CSS controla visibility: block en desktop, none en móvil */}
           <img
             src="/brand/text-dark.png"
             alt="aeon"
             className="aeon-header-wordmark"
-            style={{ height: 16, width: "auto", display: "block", userSelect: "none" }}
+            style={{ height: 16, width: "auto", userSelect: "none" }}
             draggable={false}
           />
         </div>
 
-        {/* RIGHT */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {/* RIGHT — todas las píldoras con height: 36 uniforme */}
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <button onClick={() => { setShowPins((v) => !v); setShowReactions(false); }} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            height: 36, padding: "0 12px", borderRadius: 20,
             background: showPins ? "rgba(0,122,255,0.1)" : "rgba(255,255,255,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             border: showPins ? "1px solid rgba(0,122,255,0.3)" : "1px solid rgba(255,255,255,0.7)",
@@ -161,7 +162,8 @@ export default function ChatContainer() {
 
           {/* Reactions pill */}
           <button onClick={() => { setShowReactions((v) => !v); setShowPins(false); }} style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            height: 36, padding: "0 12px", borderRadius: 20,
             background: showReactions ? "rgba(0,122,255,0.1)" : "rgba(255,255,255,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             border: showReactions ? "1px solid rgba(0,122,255,0.3)" : "1px solid rgba(255,255,255,0.7)",
@@ -177,7 +179,8 @@ export default function ChatContainer() {
             )}
           </button>
           <div style={{
-            display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", borderRadius: 20,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            height: 36, padding: "0 12px", borderRadius: 20,
             background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
             fontSize: 12, fontWeight: 500, color: "#48484a",
