@@ -8,12 +8,23 @@ export const ChatMessageSchema = z.object({
   message: z
     .string()
     .min(1, "Message cannot be empty")
-    .max(4000, "Message exceeds 4000 character limit")
+    .max(50000, "Message exceeds limit")
     .trim(),
   conversationId: z
     .string()
     .uuid("Invalid conversation ID format")
     .optional(),
+  /** File attachments with extracted content */
+  attachments: z.array(z.object({
+    name: z.string().max(255),
+    type: z.enum(["pdf", "word", "image", "text"]),
+    /** Extracted text (for PDF, Word, text files) — max 100KB */
+    textContent: z.string().max(100_000).optional(),
+    /** Base64 data URL (for images) — max ~5MB */
+    imageData: z.string().max(7_000_000).optional(),
+  })).max(5).optional(),
+  /** Feedback memory context for continuous learning */
+  feedbackContext: z.string().max(5000).optional(),
 });
 
 /** Inferred type from the chat message schema */

@@ -51,6 +51,7 @@ export function useChat(externalConversationId?: string) {
   const assistantIdRef = useRef<string>("");
 
   // When external conversationId changes (user selects a different convo), load its messages
+   
   useEffect(() => {
     if (!externalConversationId) return;
     setConversationId(externalConversationId);
@@ -75,7 +76,7 @@ export function useChat(externalConversationId?: string) {
   }, [messages, conversationId]);
 
   const sendMessage = useCallback(
-    async (content: string) => {
+    async (content: string, attachments?: { name: string; type: "pdf" | "word" | "image" | "text"; textContent?: string; imageData?: string; size: number; previewUrl?: string }[], feedbackContext?: string) => {
       if (!content.trim() || isStreaming) return;
 
       setError(null);
@@ -85,6 +86,13 @@ export function useChat(externalConversationId?: string) {
         role: "user",
         content: content.trim(),
         timestamp: Date.now(),
+        // Store lightweight attachment metadata for display (no base64)
+        attachments: attachments?.map((a) => ({
+          name: a.name,
+          type: a.type,
+          size: a.size,
+          previewUrl: a.type === "image" ? a.previewUrl : undefined,
+        })),
       };
 
       const assistantId = generateId();
@@ -99,6 +107,14 @@ export function useChat(externalConversationId?: string) {
       };
 
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
+
+      // Build API attachments (with content for the AI)
+      const apiAttachments = attachments?.map((a) => ({
+        name: a.name,
+        type: a.type,
+        textContent: a.textContent,
+        imageData: a.imageData,
+      }));
 
       await startStream(
         content.trim(),
@@ -139,7 +155,9 @@ export function useChat(externalConversationId?: string) {
                 : msg
             )
           );
-        }
+        },
+        apiAttachments,
+        feedbackContext
       );
     },
     [isStreaming, conversationId, startStream]

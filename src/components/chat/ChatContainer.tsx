@@ -2,13 +2,14 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, ArrowLeft, Pin, Menu, ThumbsUp } from "lucide-react";
+import { MessageCircle, Pin, Menu, ThumbsUp } from "lucide-react";
 import AeonLogo from "@/components/ui/AeonLogo";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
 import { usePinnedMessages } from "@/hooks/usePinnedMessages";
 import { useConversationHistory } from "@/hooks/useConversationHistory";
 import { useReactions } from "@/hooks/useReactions";
+import { useFeedbackMemory } from "@/hooks/useFeedbackMemory";
 import ChatInput from "./ChatInput";
 import MessageBubble from "./MessageBubble";
 import PinnedPanel from "./PinnedPanel";
@@ -27,11 +28,16 @@ export default function ChatContainer() {
     conversations, saveConversation, deleteConversation,
     togglePinConversation, reorderConversation,
   } = useConversationHistory();
+  const { recordFeedback, getRelevantFeedback } = useFeedbackMemory();
 
   const [showPins, setShowPins] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Prevent hydration mismatch — localStorage data only available on client
+  useEffect(() => { setMounted(true); }, []);
 
   // Derive liked/disliked message lists for ReactionsPanel
   const likedMessages = messages.filter((m) => getReaction(m.id) === "up");
@@ -91,45 +97,36 @@ export default function ChatContainer() {
         height: 56, flexShrink: 0, display: "flex", alignItems: "center",
         padding: "0 16px", gap: 8, background: "#f5f5f7", zIndex: 10,
       }}>
-        {/* LEFT */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <button onClick={() => setShowSidebar((v) => !v)} style={{
-            width: 36, height: 36, borderRadius: "50%",
-            background: showSidebar ? "rgba(0,122,255,0.1)" : "rgba(255,255,255,0.6)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            border: showSidebar ? "1px solid rgba(0,122,255,0.3)" : "1px solid rgba(255,255,255,0.7)",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.08)", display: "grid", placeItems: "center",
-            cursor: "pointer", color: showSidebar ? "#007aff" : "#48484a", transition: "all 0.2s",
-          }} title="Historial">
-            <Menu size={16} />
-          </button>
-          <button
-            onClick={() => { sessionStorage.removeItem("aeon-active-conv"); router.push("/"); }}
-            style={{
-              display: "flex", alignItems: "center", gap: 6, padding: "6px 14px", borderRadius: 20,
-              background: "rgba(255,255,255,0.6)", backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-              border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-              color: "#48484a", fontSize: 13, fontWeight: 500, cursor: "pointer",
-            }}
-          >
-            <ArrowLeft size={14} /><span>Inicio</span>
-          </button>
-        </div>
-
-        {/* CENTER */}
-        <div style={{
-          flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-          padding: "6px 20px", borderRadius: 20, background: "rgba(255,255,255,0.6)",
+        {/* LEFT — sidebar toggle */}
+        <button onClick={() => setShowSidebar((v) => !v)} style={{
+          width: 56, height: 36, borderRadius: 100, flexShrink: 0,
+          background: showSidebar ? "rgba(0,122,255,0.1)" : "rgba(255,255,255,0.6)",
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-          border: "1px solid rgba(255,255,255,0.7)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        }}>
-          <span style={{
-            fontFamily: "'Baskerville Old Face', Baskerville, 'Palatino Linotype', Palatino, serif",
-            fontSize: 18,
-            fontWeight: 400,
-            letterSpacing: "0.02em",
-            color: "#3d3d3d",
-          }}>aeon</span>
+          border: showSidebar ? "1px solid rgba(0,122,255,0.3)" : "1px solid rgba(255,255,255,0.7)",
+          boxShadow: "0 1px 4px rgba(0,0,0,0.08)", display: "grid", placeItems: "center",
+          cursor: "pointer", color: showSidebar ? "#007aff" : "#48484a", transition: "all 0.2s",
+        }} title="Historial">
+          <Menu size={16} />
+        </button>
+
+        {/* CENTER — big glass pill with aeon left-justified */}
+        <div
+          onClick={() => { sessionStorage.removeItem("aeon-active-conv"); router.push("/"); }}
+          style={{
+            flex: 1, display: "flex", alignItems: "center", gap: 6, height: 36,
+            padding: "0 20px", borderRadius: 20, cursor: "pointer",
+            background: "rgba(255,255,255,0.6)",
+            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+            border: "1px solid rgba(255,255,255,0.7)",
+            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+          }}
+        >
+          <img
+            src="/brand/text-dark.png"
+            alt="aeon"
+            style={{ height: 16, width: "auto", display: "block", userSelect: "none" }}
+            draggable={false}
+          />
         </div>
 
         {/* RIGHT */}
@@ -143,7 +140,7 @@ export default function ChatContainer() {
             fontSize: 13, fontWeight: 500, color: showPins ? "#007aff" : "#48484a", transition: "all 0.2s",
           }} title="Mensajes pineados">
             <Pin size={13} /><span>Pins</span>
-            {pinnedMessages.length > 0 && (
+            {mounted && pinnedMessages.length > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 600, color: "#fff", background: "#007aff",
                 borderRadius: 10, padding: "1px 6px",
@@ -161,7 +158,7 @@ export default function ChatContainer() {
             fontSize: 13, fontWeight: 500, color: showReactions ? "#007aff" : "#48484a", transition: "all 0.2s",
           }} title="Reacciones">
             <ThumbsUp size={13} /><span>Reacciones</span>
-            {reactionsCount > 0 && (
+            {mounted && reactionsCount > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 600, color: "#fff", background: "#007aff",
                 borderRadius: 10, padding: "1px 6px",
@@ -180,6 +177,32 @@ export default function ChatContainer() {
         </div>
       </div>
 
+      {/* ═══ CONVERSATION TITLE PILL ═══ */}
+      {mounted && messages.length > 0 && (() => {
+        const firstUser = messages.find((m) => m.role === "user");
+        if (!firstUser) return null;
+        const title = firstUser.content.slice(0, 50) + (firstUser.content.length > 50 ? "…" : "");
+        return (
+          <div style={{
+            flexShrink: 0, display: "flex", justifyContent: "center",
+            padding: "6px 16px", background: "#f5f5f7",
+          }}>
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "6px 16px", borderRadius: 100,
+              background: "rgba(255,255,255,0.6)",
+              backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+              border: "1px solid rgba(255,255,255,0.7)",
+              boxShadow: "0 1px 4px rgba(0,0,0,0.04)",
+              fontSize: 13, fontWeight: 700, color: "#48484a",
+              maxWidth: 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {title}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ═══ CONTENT ═══ */}
       <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }} className="custom-scrollbar">
         {messages.length === 0 ? (
@@ -188,10 +211,7 @@ export default function ChatContainer() {
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
               style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", marginTop: -40 }}
             >
-              <div style={{ width: 64, height: 64, borderRadius: 18, background: "#fff", border: "1px solid #d2d2d7", display: "grid", placeItems: "center", marginBottom: 20, boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}>
-                <MessageCircle size={26} color="#86868b" />
-              </div>
-              <div style={{ marginBottom: 6 }}><AeonLogo variant="wordmark" theme="dark" height={28} /></div>
+              <div style={{ marginBottom: 6 }}><AeonLogo variant="wordmark" theme="dark" height={56} /></div>
               <p style={{ fontSize: 15, color: "#6e6e73", maxWidth: 340, lineHeight: 1.5, marginBottom: 32 }}>
                 Inicia una conversación. Tus mensajes son procesados de forma segura y soberana.
               </p>
@@ -221,7 +241,19 @@ export default function ChatContainer() {
                     isPinned={isPinned(msg.id)}
                     onTogglePin={togglePin}
                     reaction={getReaction(msg.id)}
-                    onReact={(id, r) => setReaction(id, r)}
+                    onReact={(id, r) => {
+                      setReaction(id, r);
+                      // Record feedback for learning
+                      const aiMsg = messages.find((m) => m.id === id);
+                      if (aiMsg && aiMsg.role === "assistant") {
+                        // Find the user message that preceded this AI response
+                        const msgIdx = messages.findIndex((m) => m.id === id);
+                        const userMsg = msgIdx > 0 ? messages[msgIdx - 1] : null;
+                        if (userMsg && userMsg.role === "user") {
+                          recordFeedback(userMsg.content, aiMsg.content, r);
+                        }
+                      }
+                    }}
                   />
                 ))}
               </AnimatePresence>
@@ -235,7 +267,15 @@ export default function ChatContainer() {
       {/* ═══ INPUT ═══ */}
       <div style={{ flexShrink: 0, background: "#f5f5f7", padding: "16px 24px" }}>
         <div style={{ width: "100%", maxWidth: 760, margin: "0 auto" }}>
-          <ChatInput onSend={sendMessage} onStop={stopStream} isStreaming={isStreaming} />
+          <ChatInput
+            onSend={(msg, attachments) => {
+              // Get feedback context for continuous learning
+              const feedbackCtx = getRelevantFeedback(msg);
+              sendMessage(msg, attachments, feedbackCtx || undefined);
+            }}
+            onStop={stopStream}
+            isStreaming={isStreaming}
+          />
         </div>
       </div>
 
