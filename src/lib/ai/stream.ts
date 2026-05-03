@@ -209,9 +209,9 @@ export async function* openRouterStreamGenerator(
   for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
     const model = fallbackOrder[attempt];
 
-    // Delay progresivo entre reintentos para no saturar la API
+    // Delay fijo corto entre modelos — evita saturar la API sin bloquear el servidor
     if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, 1000 * attempt));
+      await new Promise((r) => setTimeout(r, 300));
     }
 
     try {
