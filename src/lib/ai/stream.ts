@@ -248,12 +248,10 @@ export async function* openRouterStreamGenerator(
       continue;
     }
 
-    // Success — emit model info and stream tokens
+    // Success — start streaming (never send model identity to client)
     yield {
       type: "token",
       content: "",
-      model: model.name,
-      specialty: model.specialty,
     } as StreamEvent;
 
     // Stream the response

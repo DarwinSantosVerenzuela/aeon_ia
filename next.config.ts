@@ -8,6 +8,9 @@ const nextConfig: NextConfig = {
   // SECURITY: Never expose framework identity
   poweredByHeader: false,
 
+  // SECURITY: Never expose source code in production
+  productionBrowserSourceMaps: false,
+
   // Handle pdfjs-dist canvas dependency (not needed in browser)
   // Turbopack config for Next.js 16+
   turbopack: {

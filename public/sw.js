@@ -1,6 +1,5 @@
-// Aeon IA — Service Worker v2.0
-// Estrategia: Network First para todo, Cache para offline fallback
-// NUNCA cachea chunks de Next.js para evitar stale content
+// Service Worker v2.0
+// Network First strategy, offline cache fallback
 
 const CACHE_VERSION = 'v2.0.0';
 const STATIC_CACHE = `aeon-static-${CACHE_VERSION}`;
@@ -43,13 +42,13 @@ self.addEventListener('activate', (event) => {
 // ────────────────────────────────────────────
 // FETCH — Network First siempre
 // Solo cachea assets inmutables (iconos, brand)
-// NUNCA intercepta /_next/ chunks ni páginas HTML
+// NUNCA intercepta chunks del framework ni páginas HTML
 // ────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // No interceptar: non-GET, API, HMR, Next.js chunks
+  // No interceptar: non-GET, API, HMR, framework chunks
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
   if (url.pathname.startsWith('/_next/')) return;
