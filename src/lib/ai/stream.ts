@@ -206,8 +206,6 @@ export async function* openRouterStreamGenerator(
     ];
   }
 
-  let lastError = "";
-
   for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
     const model = fallbackOrder[attempt];
 
@@ -245,12 +243,10 @@ export async function* openRouterStreamGenerator(
 
       // Si rate limited (429), server error (5xx), o not found (404), intenta el siguiente modelo
       if (response.status === 429 || response.status === 404 || response.status >= 500) {
-        lastError = `HTTP ${response.status}`;
         continue;
       }
 
       if (!response.ok) {
-        lastError = `HTTP ${response.status}`;
         continue;
       }
 
@@ -297,9 +293,8 @@ export async function* openRouterStreamGenerator(
       }
 
       return; // Successfully streamed — exit
-    } catch (fetchError) {
+    } catch {
       // Network error, timeout, or abort — try next model
-      lastError = fetchError instanceof Error ? fetchError.message : "Network error";
       continue;
     }
   }
