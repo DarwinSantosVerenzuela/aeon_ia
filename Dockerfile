@@ -9,7 +9,7 @@ RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+RUN npm ci --retry 3 || (sleep 5 && npm ci --retry 3) || (sleep 5 && npm ci --retry 3)
 
 # --- Stage 2: Build the application ---
 FROM node:20-alpine AS builder
