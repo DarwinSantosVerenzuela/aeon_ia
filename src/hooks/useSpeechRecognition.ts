@@ -68,6 +68,7 @@ export function useSpeechRecognition(
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const onTranscriptRef = useRef(onTranscript);
+  const lastProcessedIndexRef = useRef(0);
   useEffect(() => { onTranscriptRef.current = onTranscript; });
 
   const isSupported = typeof window !== "undefined" && getSpeechRecognition() !== null;
@@ -96,6 +97,7 @@ export function useSpeechRecognition(
 
     setError(null);
     setInterimTranscript("");
+    lastProcessedIndexRef.current = 0;
 
     const recognition = new SpeechRecognitionClass();
     recognition.lang = lang;
@@ -109,12 +111,16 @@ export function useSpeechRecognition(
 
     recognition.onresult = (event: SpeechRecognitionEvent) => {
       let interim = "";
-      let final = "";
+      let newFinal = "";
 
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i];
         if (result.isFinal) {
-          final += result[0].transcript;
+          // Only process this final result if we haven't already
+          if (i >= lastProcessedIndexRef.current) {
+            newFinal += result[0].transcript;
+            lastProcessedIndexRef.current = i + 1;
+          }
         } else {
           interim += result[0].transcript;
         }
@@ -122,9 +128,9 @@ export function useSpeechRecognition(
 
       setInterimTranscript(interim);
 
-      // Send finalized text immediately
-      if (final) {
-        onTranscriptRef.current(final);
+      // Send only NEW finalized text
+      if (newFinal.trim()) {
+        onTranscriptRef.current(newFinal.trim());
         setInterimTranscript("");
       }
     };
@@ -138,7 +144,7 @@ export function useSpeechRecognition(
       if (event.error === "not-allowed") {
         setError("Permiso de micrófono denegado. Actívalo en la configuración del navegador.");
       } else {
-        setError(`Error de reconocimiento: ${event.error}`);
+        setError("Error de reconocimiento de voz.");
       }
       setIsListening(false);
     };
@@ -147,6 +153,7 @@ export function useSpeechRecognition(
       setIsListening(false);
       setInterimTranscript("");
       recognitionRef.current = null;
+      lastProcessedIndexRef.current = 0;
     };
 
     recognitionRef.current = recognition;
