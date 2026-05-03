@@ -87,12 +87,8 @@ export default function RootLayout({
         <Script id="sw-register" strategy="afterInteractive">{`
           if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js', { scope: '/' })
-              .then(function(reg) {
-                console.log('[Aeon IA] Service Worker registrado:', reg.scope);
-              })
-              .catch(function(err) {
-                console.error('[Aeon IA] Error SW:', err);
-              });
+              .then(function() {})
+              .catch(function() {});
           }
         `}</Script>
       </body>

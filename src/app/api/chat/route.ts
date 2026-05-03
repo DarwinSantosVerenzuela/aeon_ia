@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("[API/Chat] Error:", error);
+    // Error handled silently — no console exposure
 
     if (error instanceof Error && error.message.includes("dangerous")) {
       return NextResponse.json(
