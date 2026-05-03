@@ -24,6 +24,7 @@ export function useReactions(conversationId: string) {
   });
 
   // CRITICAL: When conversationId changes, RE-LOAD data from localStorage
+   
   useEffect(() => {
     if (prevKeyRef.current === currentKey) return;
     prevKeyRef.current = currentKey;

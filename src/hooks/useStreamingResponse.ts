@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useCallback, useRef } from "react";
-import type { ChatMessage, StreamEvent } from "@/types";
 import { parseSSEStream } from "@/lib/ai/stream";
 
 /**

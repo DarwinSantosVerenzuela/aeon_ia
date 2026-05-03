@@ -84,6 +84,7 @@ export function useFeedbackMemory() {
   const [entries, setEntries] = useState<FeedbackEntry[]>([]);
 
   // Load from localStorage on mount
+   
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
