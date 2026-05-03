@@ -189,22 +189,15 @@ export async function* openRouterStreamGenerator(
   }
 
   // Auto-selección del modelo óptimo
-  // For images: prioritize vision-capable models (Gemma 4, Qwen VL, Gemma 3)
-  const VISION_MODEL_IDS = [
-    "google/gemma-4-31b-it:free",
-    "google/gemma-3-27b-it:free",
-  ];
-
   const primaryModel: AIModel = hasImages
-    ? AUTHORIZED_MODELS[0]  // Gemma 4 — primary vision model
+    ? AUTHORIZED_MODELS.find((m) => m.vision) || AUTHORIZED_MODELS[0]
     : routeToModel(message);
 
   // Build fallback order
   let fallbackOrder: AIModel[];
   if (hasImages) {
-    // Vision: only use vision-capable models
-    const visionModels = AUTHORIZED_MODELS.filter((m) => VISION_MODEL_IDS.includes(m.id));
-    fallbackOrder = visionModels;
+    // Vision: use ALL vision-capable models as fallback chain
+    fallbackOrder = AUTHORIZED_MODELS.filter((m) => m.vision);
   } else {
     // Text: primary first, then all others
     fallbackOrder = [
