@@ -94,13 +94,38 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     strengths: [],  // Solo usado como fallback, no en el router primario
   },
   {
-    // ✅ CONFIRMADO FREE en OpenRouter (captura del usuario: "gpt-oss-120b (free)")
+    // ✅ CONFIRMADO FREE — El más potente del pipeline (120B parámetros)
+    // Activo como modelo PRIMARIO para las tareas de mayor exigencia intelectual
     id: "openai/gpt-oss-120b:free",
     name: "OSS-120B",
-    specialty: "Respaldo Potente",
-    description: "Fallback de alta capacidad. GPT-OSS 120B versión gratuita.",
+    specialty: "Razonamiento Avanzado & Análisis Profundo",
+    description: "El más potente. 120B parámetros. Para problemas complejos, análisis profundo, código avanzado y redacción experta.",
     vision: false,
-    strengths: [],  // Solo usado como fallback, no en el router primario
+    strengths: [
+      // Razonamiento complejo y multi-paso
+      "analiza detalladamente", "análisis profundo", "razonamiento complejo",
+      "explícame en profundidad", "dime todo sobre", "investigación completa",
+      "compara y contrasta", "pro y contras", "ventajas y desventajas",
+      "argumenta", "refuta", "evalúa críticamente", "demuéstrame",
+      // Código avanzado y arquitectura
+      "arquitectura", "diseño de sistema", "patrón de diseño", "refactorizar",
+      "optimizar código", "algoritmo", "estructura de datos", "complejidad",
+      "base de datos", "sql", "mongodb", "microservicio", "escalabilidad",
+      "seguridad informática", "ciberseguridad", "penetration", "exploit",
+      "machine learning", "inteligencia artificial", "modelo de datos",
+      "typescript", "next.js", "node", "kubernetes", "infraestructura",
+      // Escritura experta y larga
+      "escribe un ensayo", "redacta un informe", "elabora un documento",
+      "escribe profesionalmente", "tesis", "investigación académica",
+      "plan estratégico", "plan de negocios completo", "propuesta técnica",
+      // Matemáticas y ciencia avanzada
+      "ecuación diferencial", "cálculo integral", "álgebra lineal",
+      "estadística avanzada", "probabilidad", "física cuántica",
+      "termodinámica", "electromagnetismo", "mecánica clásica",
+      // Filosofía y pensamiento profundo
+      "filosofía", "ética", "epistemología", "ontología",
+      "dilema moral", "pensamiento crítico", "lógica formal",
+    ],
   },
   {
     // ✅ CONFIRMADO FREE en OpenRouter (captura del usuario: "Gemma 3 27B (free)")
@@ -118,31 +143,64 @@ export const AUTHORIZED_MODELS: AIModel[] = [
  * ═══════════════════════════════════════════ */
 
 /**
- * Selecciona el modelo primario por contenido del mensaje.
- * - Temas técnicos profundos (medicina, finanzas, legal) → OSS-20B
- * - Todo lo demás → Gemma 4 31B
- * Los modelos Llama y Mistral SOLO se usan como fallback automático.
+ * Router de 3 niveles por complejidad del mensaje:
+ *
+ * NIVEL 3 — Máxima complejidad → OSS-120B (el más potente, 120B parámetros)
+ *   Razonamiento profundo, código avanzado, escritura experta, ciencia, filosofía.
+ *
+ * NIVEL 2 — Técnico/Profesional → OSS-20B
+ *   Medicina, finanzas, derecho, negocios, análisis técnico.
+ *
+ * NIVEL 1 — General → Gemma 4 31B (primario por defecto)
+ *   Conversación, creatividad, imágenes, preguntas rápidas.
+ *
+ * Los modelos Llama-70B y Gemma-3-27B son SOLO fallback automático.
  */
 export function routeToModel(message: string): AIModel {
   const lower = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  // Keywords que activan el modelo técnico especialista (OSS-20B)
+  // ── NIVEL 3: OSS-120B — Tareas de máxima exigencia intelectual
+  const powerKeywords = [
+    "analiza detalladamente", "analisis profundo", "razonamiento complejo",
+    "explicame en profundidad", "dime todo sobre", "investigacion completa",
+    "compara y contrasta", "pro y contras", "ventajas y desventajas",
+    "argumenta", "refuta", "evalua criticamente", "demuestrame",
+    "arquitectura", "diseno de sistema", "patron de diseno", "refactorizar",
+    "optimizar codigo", "algoritmo", "estructura de datos", "complejidad",
+    "base de datos", "sql", "mongodb", "microservicio", "escalabilidad",
+    "seguridad informatica", "ciberseguridad", "machine learning",
+    "inteligencia artificial", "modelo de datos", "kubernetes", "infraestructura",
+    "escribe un ensayo", "redacta un informe", "elabora un documento",
+    "tesis", "investigacion academica", "plan estrategico", "propuesta tecnica",
+    "ecuacion diferencial", "calculo integral", "algebra lineal",
+    "estadistica avanzada", "fisica cuantica", "filosofia", "etica",
+    "dilema moral", "pensamiento critico", "logica formal",
+  ];
+
+  for (const kw of powerKeywords) {
+    if (lower.includes(kw)) {
+      return AUTHORIZED_MODELS[2]; // OSS-120B — máxima potencia
+    }
+  }
+
+  // ── NIVEL 2: OSS-20B — Temas técnicos/profesionales especializados
   const techKeywords = [
     "medicina", "medico", "diagnostico", "sintoma", "tratamiento",
     "enfermedad", "salud", "hospital", "clinica", "paciente",
     "finanzas", "inversion", "economia", "mercado", "contabilidad",
     "presupuesto", "impuesto", "bolsa", "bono", "rendimiento",
     "legal", "derecho", "ley", "contrato", "abogado",
-    "negocio", "estrategia", "plan de negocio",
+    "negocio", "empresa", "estrategia", "plan de negocio",
+    "paso a paso", "detallado", "explica en detalle",
   ];
 
   for (const kw of techKeywords) {
     if (lower.includes(kw)) {
-      return AUTHORIZED_MODELS[1]; // OSS-20B para temas técnicos
+      return AUTHORIZED_MODELS[1]; // OSS-20B — especialista técnico
     }
   }
 
-  return AUTHORIZED_MODELS[0]; // Gemma 4 como modelo general por defecto
+  return AUTHORIZED_MODELS[0]; // Gemma 4 31B — general por defecto
 }
 
 /**
