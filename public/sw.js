@@ -1,81 +1,79 @@
-// Aeon IA — Service Worker v1.0
-// Estrategia: Cache First para assets estáticos, Network First para API
+// Aeon IA — Service Worker v2.0
+// Estrategia: Network First para todo, Cache para offline fallback
+// NUNCA cachea chunks de Next.js para evitar stale content
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v2.0.0';
 const STATIC_CACHE = `aeon-static-${CACHE_VERSION}`;
-const DYNAMIC_CACHE = `aeon-dynamic-${CACHE_VERSION}`;
 
-// Assets que se pre-cachean al instalar
+// Solo pre-cachear assets inmutables (iconos, manifest)
 const PRECACHE_ASSETS = [
-  '/',
   '/manifest.json',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
+  '/brand/symbol-dark.png',
+  '/brand/text-dark.png',
 ];
 
 // ────────────────────────────────────────────
-// INSTALL — pre-cachear assets críticos
+// INSTALL — pre-cachear assets inmutables
 // ────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Aeon IA Service Worker...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
-      console.log('[SW] Pre-caching critical assets');
       return cache.addAll(PRECACHE_ASSETS);
     }).then(() => self.skipWaiting())
   );
 });
 
 // ────────────────────────────────────────────
-// ACTIVATE — limpiar caches obsoletos
+// ACTIVATE — limpiar TODOS los caches anteriores
 // ────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Aeon IA Service Worker...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys
-          .filter((key) => key !== STATIC_CACHE && key !== DYNAMIC_CACHE)
-          .map((key) => {
-            console.log('[SW] Deleting old cache:', key);
-            return caches.delete(key);
-          })
+          .filter((key) => key !== STATIC_CACHE)
+          .map((key) => caches.delete(key))
       );
     }).then(() => self.clients.claim())
   );
 });
 
 // ────────────────────────────────────────────
-// FETCH — estrategia híbrida
+// FETCH — Network First siempre
+// Solo cachea assets inmutables (iconos, brand)
+// NUNCA intercepta /_next/ chunks ni páginas HTML
 // ────────────────────────────────────────────
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Ignorar requests no-GET y requests de la API
+  // No interceptar: non-GET, API, HMR, Next.js chunks
   if (request.method !== 'GET') return;
   if (url.pathname.startsWith('/api/')) return;
-  if (url.pathname.startsWith('/_next/webpack-hmr')) return;
+  if (url.pathname.startsWith('/_next/')) return;
+  if (url.pathname.includes('webpack-hmr')) return;
+  if (url.pathname.includes('turbopack')) return;
 
-  // Assets estáticos: Cache First
+  // Solo cachear assets estáticos inmutables
   if (
-    url.pathname.startsWith('/_next/static/') ||
     url.pathname.startsWith('/icons/') ||
+    url.pathname.startsWith('/brand/') ||
+    url.pathname === '/manifest.json' ||
     url.pathname.endsWith('.png') ||
-    url.pathname.endsWith('.svg') ||
-    url.pathname.endsWith('.ico') ||
-    url.pathname === '/manifest.json'
+    url.pathname.endsWith('.ico')
   ) {
     event.respondWith(cacheFirst(request));
     return;
   }
 
-  // Páginas HTML: Network First con fallback a cache
+  // Todo lo demás: Network First (páginas HTML, etc.)
   event.respondWith(networkFirst(request));
 });
 
 // ────────────────────────────────────────────
-// Helpers de estrategia
+// Helpers
 // ────────────────────────────────────────────
 async function cacheFirst(request) {
   const cached = await caches.match(request);
@@ -89,24 +87,17 @@ async function cacheFirst(request) {
     }
     return response;
   } catch {
-    return new Response('Recurso no disponible offline', { status: 503 });
+    return new Response('', { status: 503 });
   }
 }
 
 async function networkFirst(request) {
   try {
-    const response = await fetch(request);
-    if (response.ok) {
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, response.clone());
-    }
-    return response;
+    return await fetch(request);
   } catch {
     const cached = await caches.match(request);
     if (cached) return cached;
-    // Fallback offline page
-    const offlinePage = await caches.match('/');
-    return offlinePage || new Response('Aeon IA — Sin conexión', {
+    return new Response('Aeon IA — Sin conexión', {
       status: 503,
       headers: { 'Content-Type': 'text/html' }
     });
