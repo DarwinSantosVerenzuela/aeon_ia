@@ -3,8 +3,6 @@ name: CI/CD - Build & Deploy
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main, qa, dev]
   workflow_dispatch:
 
 env:
@@ -34,12 +32,11 @@ jobs:
       - name: Type Check
         run: npx tsc --noEmit
 
-  # ── Build & Push Docker Image ──
+  # ── Build & Push Docker Image (SOLO en main) ──
   build:
     name: Build Docker Image
     needs: quality
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
     permissions:
       contents: read
       packages: write
@@ -76,7 +73,6 @@ jobs:
     name: Deploy to Production
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
 
     steps:
       - name: Deploy via SSH
