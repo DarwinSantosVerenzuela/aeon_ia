@@ -18,10 +18,10 @@ export const ChatMessageSchema = z.object({
   attachments: z.array(z.object({
     name: z.string().max(255),
     type: z.enum(["pdf", "word", "image", "text"]),
-    /** Extracted text (for PDF, Word, text files) — max 100KB */
-    textContent: z.string().max(100_000).optional(),
-    /** Base64 data URL (for images) — max ~5MB */
-    imageData: z.string().max(7_000_000).optional(),
+    /** Extracted text (for PDF, Word, text files) — max 200KB */
+    textContent: z.string().max(200_000).optional(),
+    /** Base64 data URL (for images) — max ~15MB imagen real = ~20MB base64 */
+    imageData: z.string().max(20_000_000).optional(),
   })).max(5).optional(),
   /** Feedback memory context for continuous learning */
   feedbackContext: z.string().max(5000).optional(),
