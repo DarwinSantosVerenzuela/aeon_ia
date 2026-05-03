@@ -145,8 +145,12 @@ export async function* openRouterStreamGenerator(
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
 
+  const TAG = "[AeonAI]";
+
   // Check if we have images — need a vision-capable model
   const hasImages = attachments?.some((a) => a.type === "image" && a.imageData);
+  const hasDocs = attachments?.some((a) => a.textContent && a.type !== "image");
+  console.log(`${TAG} Contenido: hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
 
   // Build document context from text-based attachments
   const docContext = attachments
@@ -175,12 +179,14 @@ export async function* openRouterStreamGenerator(
           type: "image_url",
           image_url: { url: att.imageData },
         });
+        console.log(`${TAG} Imagen adjuntada: ${att.name} (~${Math.round(att.imageData.length / 1024)}KB base64)`);
       }
     }
 
     // Add user message
     parts.push({ type: "text", text: message });
     userContent = parts;
+    console.log(`${TAG} Payload multimodal: ${parts.length} partes`);
   } else {
     // Text-only format
     userContent = docContext
@@ -194,20 +200,24 @@ export async function* openRouterStreamGenerator(
     : routeToModel(message);
 
   // Build fallback order
+  // SIEMPRE usamos todos los modelos para máxima resiliencia.
+  // Para imágenes: vision-capable primero, luego los demás (reciben solo el texto).
+  // Para texto/docs: modelo elegido por router primero, luego todos los demás.
   let fallbackOrder: AIModel[];
   if (hasImages) {
-    // Vision: use ALL vision-capable models as fallback chain
-    fallbackOrder = AUTHORIZED_MODELS.filter((m) => m.vision);
+    const visionModels = AUTHORIZED_MODELS.filter((m) => m.vision);
+    const nonVisionModels = AUTHORIZED_MODELS.filter((m) => !m.vision);
+    fallbackOrder = [...visionModels, ...nonVisionModels];
+    console.log(`${TAG} Cola imagen: ${visionModels.length} vision + ${nonVisionModels.length} texto como respaldo`);
   } else {
-    // Text: primary first, then all others
+    // Text/docs: primary first, then all others
     fallbackOrder = [
       primaryModel,
       ...AUTHORIZED_MODELS.filter((m) => m.id !== primaryModel.id),
     ];
   }
 
-  const TAG = "[AeonAI]";
-  console.log(`${TAG} Iniciando pipeline. Modelos disponibles: ${fallbackOrder.length}. API key presente: ${!!apiKey}`);
+  console.log(`${TAG} Pipeline iniciado. Modelos en cola: ${fallbackOrder.map(m => m.name).join(' → ')}`);
 
   for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
     const model = fallbackOrder[attempt];
