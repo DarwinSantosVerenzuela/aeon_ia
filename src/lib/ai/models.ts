@@ -70,6 +70,30 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     vision: true,
     strengths: [],  // No se usa en el router, solo como fallback
   },
+  {
+    // Especialista técnico: medicina, finanzas, derecho
+    id: "openai/gpt-oss-20b:free",
+    name: "OSS-20B",
+    specialty: "Razonamiento Técnico",
+    description: "Especialista en medicina, finanzas, derecho y razonamiento paso a paso.",
+    vision: false,
+    strengths: [
+      // Medicina y salud
+      "medicina", "médico", "medico", "diagnóstico", "diagnostico",
+      "síntoma", "sintoma", "tratamiento", "enfermedad", "salud",
+      "clínica", "clinica", "hospital", "paciente", "dosis",
+      // Finanzas
+      "finanzas", "inversión", "inversion", "economía", "economia",
+      "mercado", "contabilidad", "presupuesto", "impuesto", "renta",
+      "bolsa", "acción", "accion", "bono", "rendimiento",
+      // Legal
+      "legal", "derecho", "ley", "contrato", "abogado",
+      "demanda", "juicio", "norma", "reglamento",
+      // Análisis profundo
+      "negocio", "empresa", "estrategia", "plan de negocio",
+      "paso a paso", "detallado", "explica en detalle",
+    ],
+  },
 ];
 
 /* ═══════════════════════════════════════════
