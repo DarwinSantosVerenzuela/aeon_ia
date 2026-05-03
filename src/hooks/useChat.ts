@@ -51,6 +51,7 @@ export function useChat(externalConversationId?: string) {
   const assistantIdRef = useRef<string>("");
 
   // When external conversationId changes (user selects a different convo), load its messages
+   
   useEffect(() => {
     if (!externalConversationId) return;
     setConversationId(externalConversationId);

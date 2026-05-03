@@ -68,7 +68,7 @@ export function useSpeechRecognition(
   const [error, setError] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   const onTranscriptRef = useRef(onTranscript);
-  onTranscriptRef.current = onTranscript;
+  useEffect(() => { onTranscriptRef.current = onTranscript; });
 
   const isSupported = typeof window !== "undefined" && getSpeechRecognition() !== null;
 

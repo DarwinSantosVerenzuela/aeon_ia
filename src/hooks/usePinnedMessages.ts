@@ -21,6 +21,7 @@ export function usePinnedMessages(conversationId: string) {
 
   // CRITICAL: When conversationId changes, RE-LOAD data from localStorage
   // Without this, the old state would persist and overwrite the new conversation's data
+   
   useEffect(() => {
     if (prevKeyRef.current === storageKey) return;
     prevKeyRef.current = storageKey;

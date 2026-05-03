@@ -84,7 +84,8 @@ async function readPdfFile(file: File): Promise<string> {
       useWorkerFetch: false,
       isEvalSupported: false,
       useSystemFonts: true,
-    });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    } as any);
 
     const pdf = await loadingTask.promise;
     const totalPages = pdf.numPages;

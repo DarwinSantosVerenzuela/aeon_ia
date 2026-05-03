@@ -12,7 +12,15 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Utility scripts (CommonJS, not production code)
+    "scripts/**",
   ]),
+  {
+    rules: {
+      // Disable: standard React pattern for localStorage/sessionStorage hydration in useEffect
+      "react-hooks/set-state-in-effect": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;

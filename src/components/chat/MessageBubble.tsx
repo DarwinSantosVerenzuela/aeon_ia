@@ -169,27 +169,15 @@ export default function MessageBubble({ message, onEditMessage, isPinned, onTogg
     setIsEditing(false);
   };
 
-  /* ── Shared action bar ── */
-  const ActionBar = ({ actions }: { actions: React.ReactNode }) => (
-    <motion.div
-      initial={{ opacity: 0, y: 3 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 3 }}
-      transition={{ duration: 0.12 }}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      style={{
-        display: "flex", gap: 1, padding: "3px 4px", borderRadius: 10,
-        background: "rgba(255,255,255,0.95)",
-        backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-        border: "1px solid rgba(0,0,0,0.07)",
-        boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-        width: "fit-content",
-      }}
-    >
-      {actions}
-    </motion.div>
-  );
+  /* ── Shared action bar — renders inline, no component boundary ── */
+  const actionBarStyle = {
+    display: "flex", gap: 1, padding: "3px 4px", borderRadius: 10,
+    background: "rgba(255,255,255,0.95)",
+    backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+    border: "1px solid rgba(0,0,0,0.07)",
+    boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+    width: "fit-content" as const,
+  };
 
   /* ── User Message ── */
   if (isUser) {
@@ -274,14 +262,19 @@ export default function MessageBubble({ message, onEditMessage, isPinned, onTogg
             transition: "opacity 0.15s",
           }}
         >
-          <ActionBar actions={<>
+          <motion.div
+            initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 3 }} transition={{ duration: 0.12 }}
+            onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
+            style={actionBarStyle}
+          >
             <ActionBtn icon={copied ? <Check size={13} /> : <Copy size={13} />} onClick={handleCopy} tip="Copiar" />
             <ActionBtn icon={<Pencil size={13} />} onClick={() => setIsEditing(true)} tip="Editar" />
             <ActionBtn icon={<Pin size={13} />} onClick={() => onTogglePin?.(message.id)} tip={isPinned ? "Despinear" : "Pinear"} active={isPinned} />
             <Divider />
             <ActionBtn icon={<ThumbsUp size={13} />} onClick={() => onReact?.(message.id, "up")} tip="Me gusta" active={liked === "up"} color="#34c759" />
             <ActionBtn icon={<ThumbsDown size={13} />} onClick={() => onReact?.(message.id, "down")} tip="No me gusta" active={liked === "down"} color="#ff3b30" />
-          </>} />
+          </motion.div>
         </div>
       </div>
     );
@@ -346,14 +339,19 @@ export default function MessageBubble({ message, onEditMessage, isPinned, onTogg
           transition: "opacity 0.15s",
         }}
       >
-        <ActionBar actions={<>
+        <motion.div
+          initial={{ opacity: 0, y: 3 }} animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 3 }} transition={{ duration: 0.12 }}
+          onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}
+          style={actionBarStyle}
+        >
           <ActionBtn icon={copied ? <Check size={13} /> : <Copy size={13} />} onClick={handleCopy} tip="Copiar" />
           <ActionBtn icon={<Share2 size={13} />} onClick={handleShare} tip="Compartir" />
           <ActionBtn icon={<Pin size={13} />} onClick={() => onTogglePin?.(message.id)} tip={isPinned ? "Despinear" : "Pinear"} active={isPinned} />
           <Divider />
           <ActionBtn icon={<ThumbsUp size={13} />} onClick={() => onReact?.(message.id, "up")} tip="Me gusta" active={liked === "up"} color="#34c759" />
           <ActionBtn icon={<ThumbsDown size={13} />} onClick={() => onReact?.(message.id, "down")} tip="No me gusta" active={liked === "down"} color="#ff3b30" />
-        </>} />
+        </motion.div>
       </div>
     </div>
   );
