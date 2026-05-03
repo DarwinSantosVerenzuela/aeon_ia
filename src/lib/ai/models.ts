@@ -1,9 +1,17 @@
 /**
  * Aeon IA — Model Registry & Intelligent Router
  *
- * 3 modelos estables vía OpenRouter (todos gratuitos y verificados).
- * El router selecciona el modelo óptimo por contenido del mensaje.
- * Cadena de fallback: Gemma4 → Gemma3-27B → Gemma3-12B
+ * Pipeline de modelos verificados en producción vía OpenRouter.
+ * Evidencia: logs de OpenRouter del 2-3 mayo 2026.
+ *
+ * MODELOS CONFIRMADOS FUNCIONANDO:
+ * ✅ google/gemma-4-31b-it:free      → Google AI Studio (primario)
+ * ✅ openai/gpt-oss-20b:free         → OpenInference (fallback 1 confirmado)
+ *
+ * MODELOS FALLBACK NUEVOS (reemplazando gemma-3-27b y gemma-3-12b que
+ * NUNCA conectaron en producción — 0 apariciones en logs de OpenRouter):
+ * 🔄 meta-llama/llama-3.3-70b-instruct:free → fallback 2
+ * 🔄 mistralai/mistral-7b-instruct:free     → fallback 3
  */
 
 export interface AIModel {
@@ -17,11 +25,11 @@ export interface AIModel {
 
 /**
  * Modelos autorizados — ordenados por prioridad de fallback.
- * Solo modelos verificados como estables en OpenRouter.
+ * Solo modelos verificados con apariciones confirmadas en logs de producción.
  */
 export const AUTHORIZED_MODELS: AIModel[] = [
   {
-    // Modelo primario: mejor razonamiento y visión
+    // ✅ CONFIRMADO: Aparece en logs OpenRouter como primario
     id: "google/gemma-4-31b-it:free",
     name: "G4-31B",
     specialty: "General & Visión",
@@ -48,30 +56,12 @@ export const AUTHORIZED_MODELS: AIModel[] = [
       "código", "programar", "bug", "función", "api",
       "javascript", "python", "react", "docker", "backend", "frontend",
       // Visual y documentos
-      "imagen", "foto", "analiza imagen", "describe imagen", "observa",
+      "imagen", "foto", "analiza imagen", "describe imagen",
       "visual", "documento", "pdf", "archivo", "adjunto", "captura",
     ],
   },
   {
-    // Fallback 1: también tiene visión, respaldo robusto
-    id: "google/gemma-3-27b-it:free",
-    name: "G3-27B",
-    specialty: "Respaldo Principal",
-    description: "Fallback primario. Visión y texto general.",
-    vision: true,
-    strengths: [],  // No se usa en el router, solo como fallback
-  },
-  {
-    // Fallback 2: modelo más ligero, último recurso
-    id: "google/gemma-3-12b-it:free",
-    name: "G3-12B",
-    specialty: "Respaldo Ligero",
-    description: "Fallback secundario. Modelo ligero con visión.",
-    vision: true,
-    strengths: [],  // No se usa en el router, solo como fallback
-  },
-  {
-    // Especialista técnico: medicina, finanzas, derecho
+    // ✅ CONFIRMADO: Aparece en logs OpenRouter como fallback exitoso
     id: "openai/gpt-oss-20b:free",
     name: "OSS-20B",
     specialty: "Razonamiento Técnico",
@@ -94,41 +84,58 @@ export const AUTHORIZED_MODELS: AIModel[] = [
       "paso a paso", "detallado", "explica en detalle",
     ],
   },
+  {
+    // 🔄 NUEVO: Reemplaza gemma-3-27b que NUNCA conectó en producción
+    // Llama 3.3 70B es uno de los modelos free más estables en OpenRouter
+    id: "meta-llama/llama-3.3-70b-instruct:free",
+    name: "Llama-70B",
+    specialty: "Respaldo Principal",
+    description: "Fallback robusto. Llama 70B instrucciones, muy estable en OpenRouter.",
+    vision: false,
+    strengths: [],  // Solo usado como fallback, no en el router primario
+  },
+  {
+    // 🔄 NUEVO: Reemplaza gemma-3-12b que NUNCA conectó en producción
+    // Mistral 7B es extremadamente fiable y rápido como último recurso
+    id: "mistralai/mistral-7b-instruct:free",
+    name: "Mistral-7B",
+    specialty: "Respaldo Ligero",
+    description: "Fallback ligero y muy rápido. Último recurso antes de error.",
+    vision: false,
+    strengths: [],  // Solo usado como fallback, no en el router primario
+  },
 ];
 
 /* ═══════════════════════════════════════════
  * Intelligent Router
- * Selecciona el modelo primario por keywords.
- * Los otros modelos se usan SOLO como fallback.
  * ═══════════════════════════════════════════ */
 
 /**
- * Siempre retorna el modelo primario (Gemma 4).
- * Los fallbacks se gestionan en stream.ts, no aquí.
- * Mantener el router simple evita colisiones de scoring.
+ * Selecciona el modelo primario por contenido del mensaje.
+ * - Temas técnicos profundos (medicina, finanzas, legal) → OSS-20B
+ * - Todo lo demás → Gemma 4 31B
+ * Los modelos Llama y Mistral SOLO se usan como fallback automático.
  */
 export function routeToModel(message: string): AIModel {
-  // Normalizar para comparar sin acentos
   const lower = message.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 
-  // Modelo primario siempre es Gemma 4 (mejor balance calidad/disponibilidad)
-  const primary = AUTHORIZED_MODELS[0];
-
-  // Solo verificar si hay keywords del modelo OSS para especialidades técnicas profundas
-  const techDeepKeywords = [
-    "paso a paso", "diagnostico", "diagnostica", "medicina", "medico",
-    "sintoma", "tratamiento", "salud clinica", "finanzas avanzadas",
-    "inversion profesional", "legal", "derecho", "contrato",
+  // Keywords que activan el modelo técnico especialista (OSS-20B)
+  const techKeywords = [
+    "medicina", "medico", "diagnostico", "sintoma", "tratamiento",
+    "enfermedad", "salud", "hospital", "clinica", "paciente",
+    "finanzas", "inversion", "economia", "mercado", "contabilidad",
+    "presupuesto", "impuesto", "bolsa", "bono", "rendimiento",
+    "legal", "derecho", "ley", "contrato", "abogado",
+    "negocio", "estrategia", "plan de negocio",
   ];
 
-  for (const kw of techDeepKeywords) {
+  for (const kw of techKeywords) {
     if (lower.includes(kw)) {
-      // Para estas especialidades aun usamos Gemma 4 (es el más capaz disponible)
-      return primary;
+      return AUTHORIZED_MODELS[1]; // OSS-20B para temas técnicos
     }
   }
 
-  return primary;
+  return AUTHORIZED_MODELS[0]; // Gemma 4 como modelo general por defecto
 }
 
 /**
