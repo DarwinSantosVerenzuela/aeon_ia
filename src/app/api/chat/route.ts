@@ -96,6 +96,9 @@ export async function POST(request: NextRequest) {
     // 6. Select AI provider and create streaming response
     const provider = getAIProvider();
 
+    // ═══ DIAGNÓSTICO — ver en logs del container qué está pasando ═══
+    console.log(`[Route] Provider: ${provider} | API key presente: ${!!process.env.OPENROUTER_API_KEY} | IP: ${clientIP}`);
+
     const stream = createSSEStream(() => {
       switch (provider) {
         case "openrouter":
