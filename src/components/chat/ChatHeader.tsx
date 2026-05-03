@@ -47,10 +47,11 @@ export default function ChatHeader({
 
       {/* Brand — logo oficial centrado */}
       <div className="absolute left-1/2 -translate-x-1/2 flex items-center">
-        <AeonLogo
-          variant="wordmark"
-          theme="dark"
-          height={18}
+        <img
+          src="/brand/text-dark.png"
+          alt="aeon"
+          style={{ height: 18, width: "auto", display: "block" }}
+          draggable={false}
         />
       </div>
 

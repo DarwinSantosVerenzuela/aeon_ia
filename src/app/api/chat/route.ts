@@ -57,8 +57,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Parse and validate request body with Zod
-    const body = await request.json();
+    // 3. Body size limit (10MB max to prevent DoS)
+    const contentLength = request.headers.get("content-length");
+    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+      return NextResponse.json(
+        { error: "Request body too large" },
+        { status: 413 }
+      );
+    }
+
+    // 4. Parse and validate request body with Zod
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json(
+        { error: "Invalid JSON body" },
+        { status: 400 }
+      );
+    }
     const validation = ChatMessageSchema.safeParse(body);
 
     if (!validation.success) {
@@ -71,16 +88,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 4. Sanitize input
+    // 5. Sanitize input
     const sanitizedMessage = validateAndSanitize(validation.data.message);
+    const attachments = validation.data.attachments;
+    const feedbackContext = validation.data.feedbackContext;
 
-    // 5. Select AI provider and create streaming response
+    // 6. Select AI provider and create streaming response
     const provider = getAIProvider();
 
     const stream = createSSEStream(() => {
       switch (provider) {
         case "openrouter":
-          return openRouterStreamGenerator(sanitizedMessage);
+          return openRouterStreamGenerator(sanitizedMessage, attachments, feedbackContext);
         case "ollama":
           return ollamaStreamGenerator(sanitizedMessage);
         default:
@@ -95,7 +114,6 @@ export async function POST(request: NextRequest) {
         Connection: "keep-alive",
         "X-Content-Type-Options": "nosniff",
         "X-RateLimit-Remaining": rateLimit.remaining.toString(),
-        "X-AI-Provider": provider,
       },
     });
   } catch (error) {

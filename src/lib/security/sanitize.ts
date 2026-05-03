@@ -1,7 +1,12 @@
 /**
  * Input sanitization utilities.
  * Strips potentially dangerous content from user inputs
- * to prevent XSS, injection, and prompt injection attacks.
+ * to prevent XSS and injection attacks.
+ * 
+ * Note: SQL injection detection is NOT included because Aeon IA
+ * has no SQL database. The previous filter caused false positives
+ * on legitimate technical content (e.g., documents mentioning
+ * "CREATE TABLE" or "SELECT FROM" in educational contexts).
  */
 
 /** Patterns that indicate potential script injection */
@@ -11,12 +16,6 @@ const DANGEROUS_PATTERNS = [
   /javascript\s*:/gi,
   /data\s*:\s*text\/html/gi,
   /vbscript\s*:/gi,
-];
-
-/** SQL injection patterns */
-const SQL_PATTERNS = [
-  /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b.*\b(FROM|INTO|TABLE|DATABASE|WHERE)\b)/gi,
-  /(--|;|\/\*|\*\/|xp_|sp_)/g,
 ];
 
 /**
@@ -47,20 +46,6 @@ export function isSafeInput(input: string): boolean {
 }
 
 /**
- * Check for potential SQL injection patterns.
- */
-export function hasSQLInjection(input: string): boolean {
-  for (const pattern of SQL_PATTERNS) {
-    if (pattern.test(input)) {
-      pattern.lastIndex = 0;
-      return true;
-    }
-    pattern.lastIndex = 0;
-  }
-  return false;
-}
-
-/**
  * Sanitize user input by stripping dangerous content.
  * Used as a defense-in-depth layer alongside Zod validation.
  */
@@ -86,10 +71,6 @@ export function sanitizeInput(input: string): string {
 export function validateAndSanitize(input: string): string {
   if (!isSafeInput(input)) {
     throw new Error("Input contains potentially dangerous content");
-  }
-
-  if (hasSQLInjection(input)) {
-    throw new Error("Input contains suspicious patterns");
   }
 
   return sanitizeInput(input);
