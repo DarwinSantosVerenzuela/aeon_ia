@@ -29,13 +29,15 @@ body {
 [data-nextjs-toast], nextjs-portal { display: none !important; }
 
 /* ═══ Header responsive: móvil optimizado ═══ */
+/* Estado BASE (desktop-first): wordmark visible, symbol oculto */
+.aeon-header-symbol  { display: none; }
+.aeon-header-wordmark { display: block; }
+
 @media (max-width: 640px) {
-  /* Logo: símbolo solo en móvil, wordmark en desktop */
-  .aeon-header-symbol { display: block !important; }
+  /* Móvil: invertir — solo símbolo, ocultar wordmark y textos */
+  .aeon-header-symbol  { display: block !important; }
   .aeon-header-wordmark { display: none !important; }
-  /* Ocultar textos de botones — solo mostrar iconos */
   .aeon-header-btn-text { display: none !important; }
-  /* Hamburguesa más compacta */
   .aeon-header-hamburger { width: 40px !important; }
 }
 @media (min-width: 641px) {

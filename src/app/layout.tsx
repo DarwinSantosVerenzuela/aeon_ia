@@ -67,7 +67,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className={`${inter.variable} h-full antialiased`}>
+    <html lang="es" className={`${inter.variable} h-full antialiased`} suppressHydrationWarning>
       <head>
         {/* PWA — Apple specific */}
         <meta name="mobile-web-app-capable" content="yes" />
@@ -81,7 +81,7 @@ export default function RootLayout({
         <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
         <meta name="msapplication-TileColor" content="#3d3d3d" />
       </head>
-      <body className="min-h-full flex flex-col" style={{ background: "#f5f5f7", color: "#48484a" }}>
+      <body className="min-h-full flex flex-col" style={{ background: "#f5f5f7", color: "#48484a" }} suppressHydrationWarning>
         {children}
         {/* Service Worker registration */}
         <Script id="sw-register" strategy="afterInteractive">{`
