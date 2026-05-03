@@ -57,11 +57,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Body size limit (10MB max to prevent DoS)
+    // 3. Body size limit (25MB max — imágenes en base64 son ~1.37x su tamaño original)
     const contentLength = request.headers.get("content-length");
-    if (contentLength && parseInt(contentLength) > 10 * 1024 * 1024) {
+    if (contentLength && parseInt(contentLength) > 25 * 1024 * 1024) {
       return NextResponse.json(
-        { error: "Request body too large" },
+        { error: "Request body too large (max 25MB)" },
         { status: 413 }
       );
     }
@@ -79,6 +79,7 @@ export async function POST(request: NextRequest) {
     const validation = ChatMessageSchema.safeParse(body);
 
     if (!validation.success) {
+      console.error(`[Route] Schema validation FAILED:`, JSON.stringify(validation.error.flatten().fieldErrors));
       return NextResponse.json(
         {
           error: "Invalid request",
