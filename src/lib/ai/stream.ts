@@ -189,21 +189,34 @@ export async function* openRouterStreamGenerator(
   }
 
   // Auto-selección del modelo óptimo
-  // Force Gemma 4 for images (it supports vision)
+  // For images: prioritize vision-capable models (Gemma 4, Qwen VL, Gemma 3)
+  const VISION_MODEL_IDS = [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-3-27b-it:free",
+  ];
+
   const primaryModel: AIModel = hasImages
-    ? AUTHORIZED_MODELS[0]  // Gemma 4 — vision-capable
+    ? AUTHORIZED_MODELS[0]  // Gemma 4 — primary vision model
     : routeToModel(message);
 
-  // Build fallback order: primary first, then remaining models
-  const fallbackOrder = [
-    primaryModel,
-    ...AUTHORIZED_MODELS.filter((m) => m.id !== primaryModel.id),
-  ];
+  // Build fallback order
+  let fallbackOrder: AIModel[];
+  if (hasImages) {
+    // Vision: only use vision-capable models
+    const visionModels = AUTHORIZED_MODELS.filter((m) => VISION_MODEL_IDS.includes(m.id));
+    fallbackOrder = visionModels;
+  } else {
+    // Text: primary first, then all others
+    fallbackOrder = [
+      primaryModel,
+      ...AUTHORIZED_MODELS.filter((m) => m.id !== primaryModel.id),
+    ];
+  }
 
   let lastError = "";
 
   for (const model of fallbackOrder) {
-    console.log(`[Aeon Router] Trying: ${model.name} (${model.id})${hasImages ? " [VISION]" : ""}`);
+
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -226,13 +239,11 @@ export async function* openRouterStreamGenerator(
 
     // If rate limited (429) or not found (404), try next model
     if (response.status === 429 || response.status === 404) {
-      console.warn(`[Aeon Router] ${model.name} unavailable (${response.status}), trying next...`);
       lastError = `HTTP ${response.status}`;
       continue;
     }
 
     if (!response.ok) {
-      console.warn(`[Aeon Router] ${model.name} error ${response.status}, trying next...`);
       lastError = `HTTP ${response.status}`;
       continue;
     }

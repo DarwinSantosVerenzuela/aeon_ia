@@ -54,6 +54,13 @@ export const AUTHORIZED_MODELS: AIModel[] = [
       "derecho", "ley", "contrato", "negocio", "empresa", "estrategia",
     ],
   },
+  {
+    id: "google/gemma-3-27b-it:free",
+    name: "Gemma 3",
+    specialty: "Respaldo General",
+    description: "Modelo de respaldo para conversación general y análisis visual",
+    strengths: [],
+  },
 ];
 
 /* ═══════════════════════════════════════════

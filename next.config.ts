@@ -5,6 +5,9 @@ const isDev = process.env.NODE_ENV === "development";
 const nextConfig: NextConfig = {
   output: "standalone",
 
+  // SECURITY: Never expose framework identity
+  poweredByHeader: false,
+
   // Handle pdfjs-dist canvas dependency (not needed in browser)
   // Turbopack config for Next.js 16+
   turbopack: {

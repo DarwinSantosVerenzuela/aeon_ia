@@ -115,7 +115,7 @@ async function readPdfFile(file: File): Promise<string> {
 
     return textParts.join("\n\n");
   } catch (err) {
-    console.error("[Aeon] PDF read error:", err);
+    // Silent fallback — never expose errors to browser console
     // Fallback: try reading as raw text (some simple PDFs have embedded text)
     try {
       const text = await file.text();
