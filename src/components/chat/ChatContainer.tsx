@@ -98,8 +98,8 @@ export default function ChatContainer() {
         padding: "0 16px", gap: 8, background: "#f5f5f7", zIndex: 10,
       }}>
         {/* LEFT — sidebar toggle */}
-        <button onClick={() => setShowSidebar((v) => !v)} style={{
-          width: 56, height: 36, borderRadius: 100, flexShrink: 0,
+        <button onClick={() => setShowSidebar((v) => !v)} className="aeon-header-hamburger" style={{
+          height: 36, borderRadius: 100, flexShrink: 0,
           background: showSidebar ? "rgba(0,122,255,0.1)" : "rgba(255,255,255,0.6)",
           backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
           border: showSidebar ? "1px solid rgba(0,122,255,0.3)" : "1px solid rgba(255,255,255,0.7)",
@@ -109,11 +109,12 @@ export default function ChatContainer() {
           <Menu size={16} />
         </button>
 
-        {/* CENTER — big glass pill with aeon left-justified */}
+        {/* CENTER — glass pill: símbolo solo en móvil, wordmark en desktop */}
         <div
           onClick={() => { sessionStorage.removeItem("aeon-active-conv"); router.push("/"); }}
           style={{
-            flex: 1, display: "flex", alignItems: "center", gap: 6, height: 36,
+            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            gap: 6, height: 36,
             padding: "0 20px", borderRadius: 20, cursor: "pointer",
             background: "rgba(255,255,255,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
@@ -121,9 +122,19 @@ export default function ChatContainer() {
             boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
           }}
         >
+          {/* Símbolo (asterisco) — visible solo en móvil */}
+          <img
+            src="/brand/symbol-dark.png"
+            alt="aeon"
+            className="aeon-header-symbol"
+            style={{ height: 20, width: 20, display: "none", userSelect: "none", objectFit: "contain" }}
+            draggable={false}
+          />
+          {/* Wordmark completo — visible en desktop */}
           <img
             src="/brand/text-dark.png"
             alt="aeon"
+            className="aeon-header-wordmark"
             style={{ height: 16, width: "auto", display: "block", userSelect: "none" }}
             draggable={false}
           />
@@ -139,7 +150,7 @@ export default function ChatContainer() {
             boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
             fontSize: 13, fontWeight: 500, color: showPins ? "#007aff" : "#48484a", transition: "all 0.2s",
           }} title="Mensajes pineados">
-            <Pin size={13} /><span>Pins</span>
+            <Pin size={13} /><span className="aeon-header-btn-text">Pins</span>
             {mounted && pinnedMessages.length > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 600, color: "#fff", background: "#007aff",
@@ -157,7 +168,7 @@ export default function ChatContainer() {
             boxShadow: "0 1px 4px rgba(0,0,0,0.06)", cursor: "pointer",
             fontSize: 13, fontWeight: 500, color: showReactions ? "#007aff" : "#48484a", transition: "all 0.2s",
           }} title="Reacciones">
-            <ThumbsUp size={13} /><span>Reacciones</span>
+            <ThumbsUp size={13} /><span className="aeon-header-btn-text">Reacciones</span>
             {mounted && reactionsCount > 0 && (
               <span style={{
                 fontSize: 10, fontWeight: 600, color: "#fff", background: "#007aff",
@@ -172,7 +183,7 @@ export default function ChatContainer() {
             fontSize: 12, fontWeight: 500, color: "#48484a",
           }}>
             <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#34c759" }} />
-            <span>Live</span>
+            <span className="aeon-header-btn-text">Live</span>
           </div>
         </div>
       </div>

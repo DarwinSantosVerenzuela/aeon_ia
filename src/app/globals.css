@@ -27,3 +27,17 @@ body {
 ::selection { background: rgba(0, 122, 255, 0.15); color: #48484a; }
 
 [data-nextjs-toast], nextjs-portal { display: none !important; }
+
+/* ═══ Header responsive: móvil optimizado ═══ */
+@media (max-width: 640px) {
+  /* Logo: símbolo solo en móvil, wordmark en desktop */
+  .aeon-header-symbol { display: block !important; }
+  .aeon-header-wordmark { display: none !important; }
+  /* Ocultar textos de botones — solo mostrar iconos */
+  .aeon-header-btn-text { display: none !important; }
+  /* Hamburguesa más compacta */
+  .aeon-header-hamburger { width: 40px !important; }
+}
+@media (min-width: 641px) {
+  .aeon-header-hamburger { width: 56px; }
+}

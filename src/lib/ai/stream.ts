@@ -208,82 +208,100 @@ export async function* openRouterStreamGenerator(
 
   let lastError = "";
 
-  for (const model of fallbackOrder) {
+  for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
+    const model = fallbackOrder[attempt];
 
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://aeon-ia.knowtech.cc",
-        "X-Title": "Aeon IA",
-      },
-      body: JSON.stringify({
-        model: model.id,
-        messages: [
-          { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
-          { role: "user", content: userContent },
-        ],
-        stream: true,
-        max_tokens: 2048,
-      }),
-    });
-
-    // If rate limited (429) or not found (404), try next model
-    if (response.status === 429 || response.status === 404) {
-      lastError = `HTTP ${response.status}`;
-      continue;
+    // Delay progresivo entre reintentos para no saturar la API
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 1000 * attempt));
     }
-
-    if (!response.ok) {
-      lastError = `HTTP ${response.status}`;
-      continue;
-    }
-
-    // Success — start streaming (never send model identity to client)
-    yield {
-      type: "token",
-      content: "",
-    } as StreamEvent;
-
-    // Stream the response
-    const reader = response.body?.getReader();
-    if (!reader) throw new Error("Response body is not readable");
-
-    const decoder = new TextDecoder();
-    let buffer = "";
 
     try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+      // Timeout de 30 segundos para evitar cuelgues en producción
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://aeon-ia.knowtech.cc",
+          "X-Title": "Aeon IA",
+        },
+        body: JSON.stringify({
+          model: model.id,
+          messages: [
+            { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
+            { role: "user", content: userContent },
+          ],
+          stream: true,
+          max_tokens: 2048,
+        }),
+        signal: controller.signal,
+      });
 
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed.startsWith("data: ")) continue;
-          if (trimmed === "data: [DONE]") return;
+      clearTimeout(timeoutId);
 
-          try {
-            const json = JSON.parse(trimmed.slice(6));
-            const content = json.choices?.[0]?.delta?.content;
-            if (content) {
-              yield { type: "token", content };
+      // Si rate limited (429), server error (5xx), o not found (404), intenta el siguiente modelo
+      if (response.status === 429 || response.status === 404 || response.status >= 500) {
+        lastError = `HTTP ${response.status}`;
+        continue;
+      }
+
+      if (!response.ok) {
+        lastError = `HTTP ${response.status}`;
+        continue;
+      }
+
+      // Success — start streaming (never send model identity to client)
+      yield {
+        type: "token",
+        content: "",
+      } as StreamEvent;
+
+      // Stream the response
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("Response body is not readable");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed.startsWith("data: ")) continue;
+            if (trimmed === "data: [DONE]") return;
+
+            try {
+              const json = JSON.parse(trimmed.slice(6));
+              const content = json.choices?.[0]?.delta?.content;
+              if (content) {
+                yield { type: "token", content };
+              }
+            } catch {
+              continue;
             }
-          } catch {
-            continue;
           }
         }
+      } finally {
+        reader.releaseLock();
       }
-    } finally {
-      reader.releaseLock();
-    }
 
-    return; // Successfully streamed — exit
+      return; // Successfully streamed — exit
+    } catch (fetchError) {
+      // Network error, timeout, or abort — try next model
+      lastError = fetchError instanceof Error ? fetchError.message : "Network error";
+      continue;
+    }
   }
 
   // All models failed — never reveal model names to the user

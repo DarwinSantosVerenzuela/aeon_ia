@@ -24,50 +24,61 @@ function saveMessages(conversationId: string, messages: ChatMessage[]) {
 
 const ACTIVE_KEY = "aeon-active-conv";
 
-function getInitialConvId(externalId?: string): string {
-  if (externalId) return externalId;
-  // sessionStorage clears on tab close → always fresh session on reopen
-  if (typeof window !== "undefined") {
-    const saved = sessionStorage.getItem(ACTIVE_KEY);
-    if (saved) return saved;
-  }
-  return crypto.randomUUID();
-}
+// ID estable para evitar hydration mismatch — se reemplaza en useEffect
+const SSR_PLACEHOLDER_ID = "ssr-placeholder";
 
 /**
  * Main chat state management hook.
  * Persists messages to localStorage keyed by conversationId.
  * Accepts an optional external conversationId for loading saved conversations.
+ * 
+ * Usa un placeholder durante SSR para evitar hydration mismatch (React #418),
+ * y sincroniza con sessionStorage en el primer useEffect del cliente.
  */
 export function useChat(externalConversationId?: string) {
   const [conversationId, setConversationId] = useState<string>(
-    () => getInitialConvId(externalConversationId)
+    externalConversationId || SSR_PLACEHOLDER_ID
   );
-  const [messages, setMessages] = useState<ChatMessage[]>(
-    () => loadMessages(getInitialConvId(externalConversationId))
-  );
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
   const { isStreaming, startStream, stopStream } = useStreamingResponse();
   const assistantIdRef = useRef<string>("");
+  const initializedRef = useRef(false);
+
+  // Hydrate on client mount — load real conversationId and messages from storage
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+
+    let id = externalConversationId;
+    if (!id) {
+      const saved = sessionStorage.getItem(ACTIVE_KEY);
+      id = saved || crypto.randomUUID();
+    }
+    setConversationId(id);
+    setMessages(loadMessages(id));
+    sessionStorage.setItem(ACTIVE_KEY, id);
+  }, [externalConversationId]);
 
   // When external conversationId changes (user selects a different convo), load its messages
-   
   useEffect(() => {
-    if (!externalConversationId) return;
+    if (!externalConversationId || !initializedRef.current) return;
     setConversationId(externalConversationId);
     setMessages(loadMessages(externalConversationId));
     setError(null);
     sessionStorage.setItem(ACTIVE_KEY, externalConversationId);
   }, [externalConversationId]);
 
-  // Persist the active conversationId in sessionStorage (clears on tab close)
+  // Persist the active conversationId in sessionStorage
   useEffect(() => {
+    if (conversationId === SSR_PLACEHOLDER_ID) return;
     sessionStorage.setItem(ACTIVE_KEY, conversationId);
   }, [conversationId]);
 
   // Persist messages whenever they change (skip empty & streaming states)
   useEffect(() => {
     if (messages.length === 0) return;
+    if (conversationId === SSR_PLACEHOLDER_ID) return;
     // Don't save while the assistant is mid-stream (incomplete message)
     const hasActiveStream = messages.some((m) => m.isStreaming);
     if (!hasActiveStream) {
@@ -77,7 +88,7 @@ export function useChat(externalConversationId?: string) {
 
   const sendMessage = useCallback(
     async (content: string, attachments?: { name: string; type: "pdf" | "word" | "image" | "text"; textContent?: string; imageData?: string; size: number; previewUrl?: string }[], feedbackContext?: string) => {
-      if (!content.trim() || isStreaming) return;
+      if (!content.trim() || isStreaming || conversationId === SSR_PLACEHOLDER_ID) return;
 
       setError(null);
 
