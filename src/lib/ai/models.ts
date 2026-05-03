@@ -43,8 +43,8 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     ],
   },
   {
-    id: "openai/gpt-oss-20b:free",
-    name: "GPT-OSS",
+    id: "meta-llama/llama-3.3-70b-instruct:free",
+    name: "Llama 3.3",
     specialty: "Razonamiento Técnico",
     description: "Razonamiento paso a paso, medicina, finanzas, derecho y problemas complejos",
     strengths: [

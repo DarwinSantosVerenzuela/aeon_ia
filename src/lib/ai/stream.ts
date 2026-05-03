@@ -216,16 +216,16 @@ export async function* openRouterStreamGenerator(
       }),
     });
 
-    // If rate limited (429), try next model
-    if (response.status === 429) {
-      console.warn(`[Aeon Router] ${model.name} rate limited (429), trying next...`);
-      lastError = `${model.name} rate limited`;
+    // If rate limited (429) or not found (404), try next model
+    if (response.status === 429 || response.status === 404) {
+      console.warn(`[Aeon Router] ${model.name} unavailable (${response.status}), trying next...`);
+      lastError = `HTTP ${response.status}`;
       continue;
     }
 
     if (!response.ok) {
       console.warn(`[Aeon Router] ${model.name} error ${response.status}, trying next...`);
-      lastError = `${model.name}: HTTP ${response.status}`;
+      lastError = `HTTP ${response.status}`;
       continue;
     }
 
@@ -276,8 +276,8 @@ export async function* openRouterStreamGenerator(
     return; // Successfully streamed — exit
   }
 
-  // All models failed
-  throw new Error(`Todos los modelos están rate-limited. Último error: ${lastError}. Intenta de nuevo en unos segundos.`);
+  // All models failed — never reveal model names to the user
+  throw new Error("El servicio está temporalmente saturado. Por favor intenta de nuevo en unos segundos.");
 }
 
 /* ═══════════════════════════════════════════
