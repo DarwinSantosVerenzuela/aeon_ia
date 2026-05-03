@@ -1,6 +1,14 @@
 /** Role of a message participant */
 export type MessageRole = "user" | "assistant" | "system";
 
+/** Attachment metadata stored with a message (lightweight, no base64) */
+export interface MessageAttachment {
+  name: string;
+  type: "pdf" | "word" | "image" | "text";
+  size: number;
+  previewUrl?: string;
+}
+
 /** Single chat message */
 export interface ChatMessage {
   id: string;
@@ -10,6 +18,8 @@ export interface ChatMessage {
   isStreaming?: boolean;
   modelName?: string;
   modelSpecialty?: string;
+  /** Attached files metadata (for display in the bubble) */
+  attachments?: MessageAttachment[];
 }
 
 /** Conversation state */

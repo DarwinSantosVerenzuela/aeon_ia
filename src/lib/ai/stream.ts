@@ -113,18 +113,78 @@ COMPORTAMIENTO GENERAL:
 - Usa Markdown cuando sea útil.`;
 
 /* ═══════════════════════════════════════════
+ * Attachment type for API
+ * ═══════════════════════════════════════════ */
+
+interface Attachment {
+  name: string;
+  type: string;
+  textContent?: string;
+  imageData?: string;
+}
+
+/* ═══════════════════════════════════════════
  * OpenRouter Streaming Generator
  * Auto-selección + fallback automático si 429
+ * Soporta multimodal (imágenes) con Gemma 4
  * ═══════════════════════════════════════════ */
 
 export async function* openRouterStreamGenerator(
-  message: string
+  message: string,
+  attachments?: Attachment[],
+  feedbackContext?: string
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new Error("OPENROUTER_API_KEY is not configured");
 
+  // Check if we have images — need a vision-capable model
+  const hasImages = attachments?.some((a) => a.type === "image" && a.imageData);
+
+  // Build document context from text-based attachments
+  const docContext = attachments
+    ?.filter((a) => a.textContent && a.type !== "image")
+    .map((a) => `--- ${a.name} ---\n${a.textContent}`)
+    .join("\n\n");
+
+  // Build the user message content (text or multimodal)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let userContent: any;
+
+  if (hasImages) {
+    // Multimodal format for vision models
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const parts: any[] = [];
+
+    // Add document context if present
+    if (docContext) {
+      parts.push({ type: "text", text: `[Documentos adjuntos]\n${docContext}\n\n` });
+    }
+
+    // Add images
+    for (const att of attachments || []) {
+      if (att.type === "image" && att.imageData) {
+        parts.push({
+          type: "image_url",
+          image_url: { url: att.imageData },
+        });
+      }
+    }
+
+    // Add user message
+    parts.push({ type: "text", text: message });
+    userContent = parts;
+  } else {
+    // Text-only format
+    userContent = docContext
+      ? `[Documentos adjuntos]\n${docContext}\n\n[Mensaje del usuario]\n${message}`
+      : message;
+  }
+
   // Auto-selección del modelo óptimo
-  const primaryModel: AIModel = routeToModel(message);
+  // Force Gemma 4 for images (it supports vision)
+  const primaryModel: AIModel = hasImages
+    ? AUTHORIZED_MODELS[0]  // Gemma 4 — vision-capable
+    : routeToModel(message);
 
   // Build fallback order: primary first, then remaining models
   const fallbackOrder = [
@@ -135,7 +195,7 @@ export async function* openRouterStreamGenerator(
   let lastError = "";
 
   for (const model of fallbackOrder) {
-    console.log(`[Aeon Router] Trying: ${model.name} (${model.id})`);
+    console.log(`[Aeon Router] Trying: ${model.name} (${model.id})${hasImages ? " [VISION]" : ""}`);
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -148,11 +208,11 @@ export async function* openRouterStreamGenerator(
       body: JSON.stringify({
         model: model.id,
         messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          { role: "user", content: message },
+          { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
+          { role: "user", content: userContent },
         ],
         stream: true,
-        max_tokens: 1024,
+        max_tokens: 2048,
       }),
     });
 
@@ -164,9 +224,8 @@ export async function* openRouterStreamGenerator(
     }
 
     if (!response.ok) {
-      const errorBody = await response.text();
       console.warn(`[Aeon Router] ${model.name} error ${response.status}, trying next...`);
-      lastError = `${model.name}: ${response.status} — ${errorBody}`;
+      lastError = `${model.name}: HTTP ${response.status}`;
       continue;
     }
 

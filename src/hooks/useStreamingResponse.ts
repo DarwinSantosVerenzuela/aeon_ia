@@ -20,7 +20,9 @@ export function useStreamingResponse() {
       onToken?: (content: string) => void,
       onComplete?: (fullContent: string) => void,
       onError?: (error: string) => void,
-      onModelInfo?: (modelName: string, modelSpecialty: string) => void
+      onModelInfo?: (modelName: string, modelSpecialty: string) => void,
+      attachments?: { name: string; type: string; textContent?: string; imageData?: string }[],
+      feedbackContext?: string
     ) => {
       setIsStreaming(true);
       setStreamedContent("");
@@ -33,7 +35,7 @@ export function useStreamingResponse() {
         const response = await fetch("/api/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message, conversationId }),
+          body: JSON.stringify({ message, conversationId, attachments, feedbackContext }),
           signal: abortRef.current.signal,
         });
 

@@ -99,26 +99,9 @@ export default function Hero() {
           marginTop: -60, position: "relative", zIndex: 1,
         }}
       >
-        {/* Badge */}
-        <div style={{ marginBottom: 32 }}>
-          <span style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "8px 16px", borderRadius: 100, fontSize: 11,
-            letterSpacing: "0.08em", textTransform: "uppercase" as const,
-            color: "#6e6e73",
-            background: "rgba(255,255,255,0.75)",
-            backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
-            border: "1px solid rgba(255,255,255,0.85)",
-            boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#34c759" }} />
-            Inteligencia Soberana
-          </span>
-        </div>
-
         {/* Logo — oficial brand identity */}
         <div style={{ display: "flex", justifyContent: "center", marginBottom: 24 }}>
-          <AeonLogo variant="wordmark" theme="dark" height={48} />
+          <AeonLogo variant="wordmark" theme="dark" height={64} />
         </div>
 
         {/* Subtitle */}

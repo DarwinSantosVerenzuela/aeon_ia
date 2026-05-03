@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -83,23 +84,17 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col" style={{ background: "#f5f5f7", color: "#48484a" }}>
         {children}
         {/* Service Worker registration */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              if ('serviceWorker' in navigator) {
-                window.addEventListener('load', function() {
-                  navigator.serviceWorker.register('/sw.js', { scope: '/' })
-                    .then(function(reg) {
-                      console.log('[Aeon IA] Service Worker registrado:', reg.scope);
-                    })
-                    .catch(function(err) {
-                      console.error('[Aeon IA] Error SW:', err);
-                    });
-                });
-              }
-            `,
-          }}
-        />
+        <Script id="sw-register" strategy="afterInteractive">{`
+          if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+              .then(function(reg) {
+                console.log('[Aeon IA] Service Worker registrado:', reg.scope);
+              })
+              .catch(function(err) {
+                console.error('[Aeon IA] Error SW:', err);
+              });
+          }
+        `}</Script>
       </body>
     </html>
   );
