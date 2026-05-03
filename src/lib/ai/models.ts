@@ -85,23 +85,30 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     ],
   },
   {
-    // 🔄 NUEVO: Reemplaza gemma-3-27b que NUNCA conectó en producción
-    // Llama 3.3 70B es uno de los modelos free más estables en OpenRouter
+    // ✅ CONFIRMADO FREE en OpenRouter — mayor capacidad que OSS-20B
     id: "meta-llama/llama-3.3-70b-instruct:free",
     name: "Llama-70B",
     specialty: "Respaldo Principal",
-    description: "Fallback robusto. Llama 70B instrucciones, muy estable en OpenRouter.",
+    description: "Fallback robusto. Llama 70B instrucciones, estable en OpenRouter.",
     vision: false,
     strengths: [],  // Solo usado como fallback, no en el router primario
   },
   {
-    // 🔄 NUEVO: Reemplaza gemma-3-12b que NUNCA conectó en producción
-    // Mistral 7B es extremadamente fiable y rápido como último recurso
-    id: "mistralai/mistral-7b-instruct:free",
-    name: "Mistral-7B",
-    specialty: "Respaldo Ligero",
-    description: "Fallback ligero y muy rápido. Último recurso antes de error.",
+    // ✅ CONFIRMADO FREE en OpenRouter (captura del usuario: "gpt-oss-120b (free)")
+    id: "openai/gpt-oss-120b:free",
+    name: "OSS-120B",
+    specialty: "Respaldo Potente",
+    description: "Fallback de alta capacidad. GPT-OSS 120B versión gratuita.",
     vision: false,
+    strengths: [],  // Solo usado como fallback, no en el router primario
+  },
+  {
+    // ✅ CONFIRMADO FREE en OpenRouter (captura del usuario: "Gemma 3 27B (free)")
+    id: "google/gemma-3-27b-it:free",
+    name: "G3-27B",
+    specialty: "Respaldo Visual",
+    description: "Fallback de Google. Gemma 3 27B versión gratuita con visión.",
+    vision: true,
     strengths: [],  // Solo usado como fallback, no en el router primario
   },
 ];
