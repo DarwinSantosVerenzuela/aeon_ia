@@ -161,27 +161,110 @@ export async function* openRouterStreamGenerator(
   } else {
     userContent = message;
   }
+  // ═══ LÓGICA SEPARADA ═══
+  // Con archivos → SOLO Gemma (3 reintentos, nunca cae a OSS-20B)
+  // Sin archivos → Router normal (Gemma o OSS-20B según contenido, con fallback)
 
-  // Seleccionar modelos
-  const primaryModel = routeToModel(message, hasAttachments);
+  if (hasAttachments) {
+    // ── ARCHIVOS: Solo Gemma ──
+    const gemma = AUTHORIZED_MODELS[0]; // Gemma 4
+    console.log(`${TAG} 📎 Archivos detectados → Solo ${gemma.name} (3 reintentos)`);
+
+    for (let retry = 0; retry < 3; retry++) {
+      if (retry > 0) {
+        const wait = 5000 + (retry * 3000); // 5s, 8s
+        console.log(`${TAG} Retry ${retry}/2 — esperando ${wait / 1000}s...`);
+        await new Promise((r) => setTimeout(r, wait));
+      }
+
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 45_000); // 45s para archivos grandes
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://aeon-ia.knowtech.cc",
+            "X-Title": "Aeon IA",
+          },
+          body: JSON.stringify({
+            model: gemma.id,
+            messages: [
+              { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
+              { role: "user", content: userContent },
+            ],
+            stream: true,
+            max_tokens: 2048,
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+        console.log(`${TAG} HTTP ${response.status} de ${gemma.name}`);
+
+        if (response.status === 401) throw new Error("API key inválida");
+        if (response.status === 429) {
+          console.warn(`${TAG} 429 en ${gemma.name} — reintentando...`);
+          continue;
+        }
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.error(`${TAG} HTTP ${response.status}: ${errBody.slice(0, 200)}`);
+          continue;
+        }
+
+        // ✅ SUCCESS
+        console.log(`${TAG} ✅ Streaming archivo con ${gemma.name}`);
+        yield { type: "token", content: "" };
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("Response body is not readable");
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let tokenCount = 0;
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data: ")) continue;
+              if (trimmed === "data: [DONE]") { console.log(`${TAG} ✅ Tokens: ${tokenCount}`); return; }
+              try {
+                const json = JSON.parse(trimmed.slice(6));
+                const c = json.choices?.[0]?.delta?.content;
+                if (c) { tokenCount++; yield { type: "token", content: c }; }
+              } catch { continue; }
+            }
+          }
+          console.log(`${TAG} ✅ Tokens: ${tokenCount}`);
+        } finally { reader.releaseLock(); }
+        return;
+
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg === "API key inválida") throw new Error("API key inválida");
+        console.error(`${TAG} Error: ${errMsg}`);
+        continue;
+      }
+    }
+
+    throw new Error("El modelo de visión está temporalmente saturado. Intenta de nuevo en unos segundos.");
+  }
+
+  // ── TEXTO: Router normal ──
+  const primaryModel = routeToModel(message);
   const fallbackModel = AUTHORIZED_MODELS.find((m) => m.id !== primaryModel.id)!;
   const models = [primaryModel, fallbackModel];
-  console.log(`${TAG} Primario: ${primaryModel.name} → Fallback: ${fallbackModel.name}`);
+  console.log(`${TAG} 💬 Texto → ${primaryModel.name} → ${fallbackModel.name}`);
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
-    console.log(`${TAG} Intento ${i + 1}/2 — ${model.name} (${model.id})`);
 
-    // Si el modelo no tiene vision y hay imágenes, convertir a texto
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let content: any = userContent;
-    if (hasImages && !model.vision) {
-      content = docContext
-        ? `[Documentos adjuntos]\n${docContext}\n\n[Nota: Se adjuntó una imagen]\n\n${message}`
-        : `[Nota: Se adjuntó una imagen]\n\n${message}`;
-    }
-
-    // Hasta 2 intentos por modelo (retry si 429)
     for (let retry = 0; retry < 2; retry++) {
       if (retry > 0) {
         console.log(`${TAG} Retry — esperando 5s...`);
@@ -204,7 +287,7 @@ export async function* openRouterStreamGenerator(
             model: model.id,
             messages: [
               { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
-              { role: "user", content },
+              { role: "user", content: userContent },
             ],
             stream: true,
             max_tokens: 2048,
@@ -216,30 +299,25 @@ export async function* openRouterStreamGenerator(
         console.log(`${TAG} HTTP ${response.status} de ${model.name}`);
 
         if (response.status === 401) throw new Error("API key inválida");
-
         if (response.status === 429) {
           console.warn(`${TAG} 429 en ${model.name}`);
           if (retry === 0) continue;
           break;
         }
-
         if (!response.ok) {
           const errBody = await response.text();
-          console.error(`${TAG} HTTP ${response.status} en ${model.name}: ${errBody.slice(0, 200)}`);
+          console.error(`${TAG} HTTP ${response.status}: ${errBody.slice(0, 200)}`);
           break;
         }
 
         // ✅ SUCCESS
         console.log(`${TAG} ✅ Streaming con ${model.name}`);
         yield { type: "token", content: "" };
-
         const reader = response.body?.getReader();
         if (!reader) throw new Error("Response body is not readable");
-
         const decoder = new TextDecoder();
         let buffer = "";
         let tokenCount = 0;
-
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -250,10 +328,7 @@ export async function* openRouterStreamGenerator(
             for (const line of lines) {
               const trimmed = line.trim();
               if (!trimmed.startsWith("data: ")) continue;
-              if (trimmed === "data: [DONE]") {
-                console.log(`${TAG} ✅ Completado. Tokens: ${tokenCount}`);
-                return;
-              }
+              if (trimmed === "data: [DONE]") { console.log(`${TAG} ✅ Tokens: ${tokenCount}`); return; }
               try {
                 const json = JSON.parse(trimmed.slice(6));
                 const c = json.choices?.[0]?.delta?.content;
@@ -261,27 +336,21 @@ export async function* openRouterStreamGenerator(
               } catch { continue; }
             }
           }
-          console.log(`${TAG} ✅ Completado. Tokens: ${tokenCount}`);
-        } finally {
-          reader.releaseLock();
-        }
+          console.log(`${TAG} ✅ Tokens: ${tokenCount}`);
+        } finally { reader.releaseLock(); }
         return;
 
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg === "API key inválida") throw new Error("API key inválida");
-        console.error(`${TAG} Error en ${model.name}: ${errMsg}`);
+        console.error(`${TAG} Error: ${errMsg}`);
         break;
       }
     }
 
-    if (i === 0) {
-      console.log(`${TAG} Pasando a fallback...`);
-      await new Promise((r) => setTimeout(r, 2000));
-    }
+    if (i === 0) await new Promise((r) => setTimeout(r, 2000));
   }
 
-  console.error(`${TAG} 🚨 Ambos modelos fallaron.`);
   throw new Error("El servicio está temporalmente saturado. Intenta de nuevo en unos segundos.");
 }
 
