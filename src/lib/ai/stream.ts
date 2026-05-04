@@ -186,19 +186,20 @@ export async function* openRouterStreamGenerator(
   }
 
   // ═══ Cola de modelos ═══
-  // Archivos (imagen/doc) → solo Gemma (tiene visión), retry agresivo
-  // Texto → Gemma primero (general), OSS-20B fallback (técnico)
+  // Archivos → DIRECTO a Gemma (el auto-router elige GPT que no ve imágenes)
+  // Texto → Auto Router FREE primero (inmediato), fallbacks después
   let modelQueue;
 
   if (hasAttachments) {
-    // Solo modelos con visión para archivos
-    modelQueue = AUTHORIZED_MODELS.filter((m) => m.vision);
-    console.log(`${TAG} 📎 Archivos → Solo visión: ${modelQueue.map(m => m.name).join(' → ')}`);
+    // Solo Gemma para archivos — NO usar auto-router (elige GPT sin visión)
+    modelQueue = AUTHORIZED_MODELS.filter((m) => m.vision && m.id !== "openrouter/free");
+    console.log(`${TAG} 📎 Archivos → Directo a: ${modelQueue.map(m => m.name).join(' → ')}`);
   } else {
-    // Todos los modelos para texto
+    // Texto: Auto Router FREE primero, luego los demás
     modelQueue = [...AUTHORIZED_MODELS];
     console.log(`${TAG} 💬 Texto → ${modelQueue.map(m => m.name).join(' → ')}`);
   }
+
 
 
   for (let i = 0; i < modelQueue.length; i++) {
