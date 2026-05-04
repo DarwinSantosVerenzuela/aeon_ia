@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ChatContainer from "@/components/chat/ChatContainer";
+import ChatPageClient from "./ChatPageClient";
 
 export const metadata: Metadata = {
   title: "Chat",
@@ -8,8 +8,8 @@ export const metadata: Metadata = {
 };
 
 /**
- * Chat page — wraps the ChatContainer client component.
+ * Chat page — Server Component for metadata, delegates to client component.
  */
 export default function ChatPage() {
-  return <ChatContainer />;
+  return <ChatPageClient />;
 }
