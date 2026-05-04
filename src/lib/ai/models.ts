@@ -1,9 +1,8 @@
 /**
  * Aeon IA — Model Registry
  *
- * Solo modelos con sufijo :free — costo $0 garantizado.
- * ✅ google/gemma-4-31b-it:free  → Visión + Razonamiento + General
- * ✅ openai/gpt-oss-20b:free     → Técnico + Fallback
+ * Primario: openrouter/free (Auto Router — elige el mejor modelo free disponible)
+ * Fallbacks: Gemma 4 :free (visión) + OSS-20B :free (técnico)
  */
 
 export interface AIModel {
@@ -16,10 +15,17 @@ export interface AIModel {
 
 export const AUTHORIZED_MODELS: AIModel[] = [
   {
+    id: "openrouter/free",
+    name: "Auto FREE",
+    specialty: "Auto-selección",
+    description: "Elige automáticamente el mejor modelo gratuito disponible. Inmediato.",
+    vision: true,
+  },
+  {
     id: "google/gemma-4-31b-it:free",
     name: "Gemma 4",
     specialty: "General & Visión",
-    description: "Modelo principal. Razonamiento, imágenes, documentos, código, conversación.",
+    description: "Razonamiento, imágenes, documentos, código, conversación.",
     vision: true,
   },
   {
