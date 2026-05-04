@@ -1,13 +1,10 @@
 /**
  * Server-Sent Events streaming utilities.
- * Handles SSE encoding/decoding and AI provider streaming.
- * 
- * Supports: OpenRouter (5 modelos autorizados), Ollama (local), Demo.
- * El modelo se selecciona automáticamente según el contenido del mensaje.
+ * Solo 2 modelos: Gemma 4 31B (primario) + OSS-20B (fallback)
  */
 
 import type { StreamEvent } from "@/types";
-import { routeToModel, VISION_MODELS, TEXT_MODELS, type AIModel } from "./models";
+import { routeToModel, AUTHORIZED_MODELS, type AIModel } from "./models";
 
 /* ═══════════════════════════════════════════
  * SSE Encoder (Server → Client)
@@ -23,21 +20,12 @@ export function createSSEStream(
       try {
         for await (const event of generator()) {
           const data = JSON.stringify(event);
-          controller.enqueue(
-            encoder.encode(`data: ${data}\n\n`)
-          );
+          controller.enqueue(encoder.encode(`data: ${data}\n\n`));
         }
-        controller.enqueue(
-          encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`)
-        );
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "done" })}\n\n`));
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : "Unknown error";
-        controller.enqueue(
-          encoder.encode(
-            `data: ${JSON.stringify({ type: "error", error: errorMsg })}\n\n`
-          )
-        );
+        const errorMsg = error instanceof Error ? error.message : "Unknown error";
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ type: "error", error: errorMsg })}\n\n`));
       } finally {
         controller.close();
       }
@@ -74,12 +62,8 @@ export async function* parseSSEStream(
         try {
           const data = JSON.parse(trimmed.slice(6)) as StreamEvent;
           yield data;
-
-          if (data.type === "done" || data.type === "error") {
-            return;
-          }
+          if (data.type === "done" || data.type === "error") return;
         } catch {
-          // Skip malformed SSE data
           continue;
         }
       }
@@ -133,8 +117,7 @@ interface Attachment {
 
 /* ═══════════════════════════════════════════
  * OpenRouter Streaming Generator
- * Auto-selección + fallback automático si 429
- * Soporta multimodal (imágenes) con Gemma 4
+ * Solo 2 modelos: Gemma 4 (primario) + OSS-20B (fallback)
  * ═══════════════════════════════════════════ */
 
 export async function* openRouterStreamGenerator(
@@ -147,255 +130,160 @@ export async function* openRouterStreamGenerator(
 
   const TAG = "[AeonAI]";
 
-  // ═══ Detectar tipo de contenido ═══
   const hasImages = attachments?.some((a) => a.type === "image" && a.imageData);
   const hasDocs = attachments?.some((a) => a.textContent && a.type !== "image");
-  const hasVisualContent = hasImages || hasDocs;
-  console.log(`${TAG} Contenido: hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
+  const hasAttachments = hasImages || hasDocs;
+  console.log(`${TAG} hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
 
-  // ═══ Construir contexto de documentos ═══
+  // Contexto de documentos
   const docContext = attachments
     ?.filter((a) => a.textContent && a.type !== "image")
     .map((a) => `--- ${a.name} ---\n${a.textContent}`)
     .join("\n\n");
 
-  // ═══ Construir contenido del usuario ═══
+  // Construir contenido del usuario
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let userContent: any;
-
   if (hasImages) {
-    // Formato multimodal para modelos vision (Gemma)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parts: any[] = [];
-    if (docContext) {
-      parts.push({ type: "text", text: `[Documentos adjuntos]\n${docContext}\n\n` });
-    }
+    if (docContext) parts.push({ type: "text", text: `[Documentos adjuntos]\n${docContext}\n\n` });
     for (const att of attachments || []) {
       if (att.type === "image" && att.imageData) {
         parts.push({ type: "image_url", image_url: { url: att.imageData } });
-        console.log(`${TAG} Imagen adjuntada: ${att.name} (~${Math.round(att.imageData.length / 1024)}KB base64)`);
+        console.log(`${TAG} Imagen: ${att.name} (~${Math.round(att.imageData.length / 1024)}KB)`);
       }
     }
     parts.push({ type: "text", text: message });
     userContent = parts;
-    console.log(`${TAG} Payload multimodal: ${parts.length} partes`);
   } else if (hasDocs) {
-    // Documentos de texto (PDF, Word, TXT) — formato texto enriquecido
     userContent = `[Documentos adjuntos]\n${docContext}\n\n[Mensaje del usuario]\n${message}`;
   } else {
     userContent = message;
   }
 
-  // ═══════════════════════════════════════════
-  // SELECCIÓN DE CARRIL
-  // ═══════════════════════════════════════════
-  let modelQueue: AIModel[];
+  // Seleccionar modelos
+  const primaryModel = routeToModel(message, hasAttachments);
+  const fallbackModel = AUTHORIZED_MODELS.find((m) => m.id !== primaryModel.id)!;
+  const models = [primaryModel, fallbackModel];
+  console.log(`${TAG} Primario: ${primaryModel.name} → Fallback: ${fallbackModel.name}`);
 
-  if (hasVisualContent) {
-    // ── CARRIL VISUAL: Solo Gemma ──
-    // Imágenes y documentos van EXCLUSIVAMENTE por modelos Gemma con visión.
-    // NO hay fallback a modelos no-vision.
-    modelQueue = [...VISION_MODELS];
-    console.log(`${TAG} 🖼️ CARRIL VISUAL activado. Solo Gemma: ${modelQueue.map(m => m.name).join(' → ')}`);
-  } else {
-    // ── CARRIL TEXTO: Modelos de texto + Gemma como respaldo ──
-    // Prioridad: router inteligente primero, luego fallbacks, Gemma al final.
-    // Gemma se agrega como último recurso para texto (es potente razonando)
-    // pero se prioriza texto primero para no gastar su rate-limit (lo necesita para imágenes).
-    const primaryModel = routeToModel(message);
-    modelQueue = [
-      primaryModel,
-      ...TEXT_MODELS.filter((m) => m.id !== primaryModel.id),
-      VISION_MODELS[0], // Gemma 4 31B como fallback final de texto
-    ];
-    console.log(`${TAG} 💬 CARRIL TEXTO activado. Primario: ${primaryModel.name}. Cola: ${modelQueue.map(m => m.name).join(' → ')}`);
-  }
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    console.log(`${TAG} Intento ${i + 1}/2 — ${model.name} (${model.id})`);
 
-  // ═══ Helper: hacer un request a OpenRouter ═══
-  async function callModel(model: AIModel, content: unknown, signal: AbortSignal) {
-    return fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-        "HTTP-Referer": "https://aeon-ia.knowtech.cc",
-        "X-Title": "Aeon IA",
-      },
-      body: JSON.stringify({
-        model: model.id,
-        messages: [
-          { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
-          { role: "user", content },
-        ],
-        stream: true,
-        max_tokens: 2048,
-      }),
-      signal,
-    });
-  }
-
-  // ═══ Iterar sobre los modelos del carril ═══
-  for (let attempt = 0; attempt < modelQueue.length; attempt++) {
-    const model = modelQueue[attempt];
-    console.log(`${TAG} Intento ${attempt + 1}/${modelQueue.length} — Modelo: ${model.name} (${model.id})`);
-
-    // Delay entre intentos para no saturar
-    if (attempt > 0) {
-      const delay = hasVisualContent ? 5000 : 300; // 5s para vision (dar tiempo al rate limit), 300ms para texto
-      console.log(`${TAG} Esperando ${delay}ms antes del siguiente intento...`);
-      await new Promise((r) => setTimeout(r, delay));
+    // Si el modelo no tiene vision y hay imágenes, convertir a texto
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let content: any = userContent;
+    if (hasImages && !model.vision) {
+      content = docContext
+        ? `[Documentos adjuntos]\n${docContext}\n\n[Nota: Se adjuntó una imagen]\n\n${message}`
+        : `[Nota: Se adjuntó una imagen]\n\n${message}`;
     }
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        console.warn(`${TAG} ⏱ Timeout 30s en modelo ${model.name}.`);
-        controller.abort();
-      }, 30_000);
-
-      const response = await callModel(model, userContent, controller.signal);
-      clearTimeout(timeoutId);
-
-      console.log(`${TAG} Respuesta HTTP ${response.status} de ${model.name}`);
-
-      if (response.status === 401) {
-        const errBody = await response.text();
-        console.error(`${TAG} ❌ 401 Unauthorized. Body: ${errBody.slice(0, 300)}`);
-        throw new Error("API key inválida");
+    // Hasta 2 intentos por modelo (retry si 429)
+    for (let retry = 0; retry < 2; retry++) {
+      if (retry > 0) {
+        console.log(`${TAG} Retry — esperando 5s...`);
+        await new Promise((r) => setTimeout(r, 5000));
       }
 
-      if (response.status === 429) {
-        const retryAfter = response.headers.get("retry-after") || "?";
-        console.warn(`${TAG} ⚠ 429 Rate Limited en ${model.name}. Retry-After: ${retryAfter}s.`);
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 30_000);
 
-        // En carril visual: reintentar el MISMO modelo hasta 2 veces con espera de 8s
-        if (hasVisualContent) {
-          for (let retry = 1; retry <= 2; retry++) {
-            console.log(`${TAG} 🔄 Carril visual — retry ${retry}/2, esperando 8s para reintentar ${model.name}...`);
-            await new Promise((r) => setTimeout(r, 8000));
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+            "HTTP-Referer": "https://aeon-ia.knowtech.cc",
+            "X-Title": "Aeon IA",
+          },
+          body: JSON.stringify({
+            model: model.id,
+            messages: [
+              { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
+              { role: "user", content },
+            ],
+            stream: true,
+            max_tokens: 2048,
+          }),
+          signal: controller.signal,
+        });
 
-            const retryController = new AbortController();
-            const retryTimeout = setTimeout(() => retryController.abort(), 30_000);
-            try {
-              const retryResp = await callModel(model, userContent, retryController.signal);
-              clearTimeout(retryTimeout);
+        clearTimeout(timeoutId);
+        console.log(`${TAG} HTTP ${response.status} de ${model.name}`);
 
-              if (retryResp.ok) {
-                console.log(`${TAG} ✅ Retry ${retry} exitoso con ${model.name}`);
-                const retryReader = retryResp.body?.getReader();
-                if (retryReader) {
-                  yield* processStream(retryReader, model, TAG);
-                  return;
-                }
-              } else if (retryResp.status === 429) {
-                console.warn(`${TAG} Retry ${retry} también 429. ${retry < 2 ? 'Intentando de nuevo...' : 'Siguiente modelo.'}`);
-                continue; // try the next retry iteration
-              } else {
-                console.warn(`${TAG} Retry ${retry} falló (HTTP ${retryResp.status}). Siguiente modelo.`);
-                break; // non-429 error, skip to next model
-              }
-            } catch {
-              clearTimeout(retryTimeout);
-              console.warn(`${TAG} Retry ${retry} error en ${model.name}. ${retry < 2 ? 'Intentando de nuevo...' : 'Siguiente modelo.'}`);
-            }
-          }
+        if (response.status === 401) throw new Error("API key inválida");
+
+        if (response.status === 429) {
+          console.warn(`${TAG} 429 en ${model.name}`);
+          if (retry === 0) continue;
+          break;
         }
-        continue;
-      }
 
-      if (response.status === 404) {
-        console.warn(`${TAG} ⚠ 404 Modelo no encontrado: ${model.id}.`);
-        continue;
-      }
-
-      if (response.status >= 500) {
-        const errBody = await response.text();
-        console.error(`${TAG} ❌ ${response.status} Error servidor en ${model.name}. Body: ${errBody.slice(0, 300)}`);
-        continue;
-      }
-
-      if (!response.ok) {
-        const errBody = await response.text();
-        console.error(`${TAG} ❌ HTTP ${response.status} en ${model.name}. Body: ${errBody.slice(0, 300)}`);
-        continue;
-      }
-
-      // ═══ SUCCESS — Streaming ═══
-      console.log(`${TAG} ✅ Streaming iniciado con ${model.name}`);
-      const reader = response.body?.getReader();
-      if (!reader) throw new Error("Response body is not readable");
-
-      yield* processStream(reader, model, TAG);
-      return;
-
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : String(err);
-      if (errMsg === "API key inválida") throw new Error("API key inválida");
-      console.error(`${TAG} ❌ Excepción en ${model.name}: ${errMsg}`);
-      continue;
-    }
-  }
-
-  // Todos los modelos del carril fallaron
-  if (hasVisualContent) {
-    console.error(`${TAG} 🚨 Todos los modelos Gemma fallaron para contenido visual.`);
-    throw new Error("Los modelos de visión están temporalmente saturados. Intenta de nuevo en unos segundos.");
-  } else {
-    console.error(`${TAG} 🚨 Todos los modelos de texto fallaron.`);
-    throw new Error("El servicio está temporalmente saturado. Por favor intenta de nuevo en unos segundos.");
-  }
-}
-
-/**
- * Procesa el stream SSE de OpenRouter y emite tokens.
- */
-async function* processStream(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  model: AIModel,
-  TAG: string
-): AsyncGenerator<StreamEvent, void, unknown> {
-  // Primer evento vacío para señalar inicio
-  yield { type: "token", content: "" };
-
-  const decoder = new TextDecoder();
-  let buffer = "";
-  let tokenCount = 0;
-
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || "";
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed.startsWith("data: ")) continue;
-        if (trimmed === "data: [DONE]") {
-          console.log(`${TAG} ✅ Stream completado con ${model.name}. Tokens: ${tokenCount}`);
-          return;
+        if (!response.ok) {
+          const errBody = await response.text();
+          console.error(`${TAG} HTTP ${response.status} en ${model.name}: ${errBody.slice(0, 200)}`);
+          break;
         }
+
+        // ✅ SUCCESS
+        console.log(`${TAG} ✅ Streaming con ${model.name}`);
+        yield { type: "token", content: "" };
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("Response body is not readable");
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let tokenCount = 0;
 
         try {
-          const json = JSON.parse(trimmed.slice(6));
-          const content = json.choices?.[0]?.delta?.content;
-          if (content) {
-            tokenCount++;
-            yield { type: "token", content };
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+            buffer = lines.pop() || "";
+            for (const line of lines) {
+              const trimmed = line.trim();
+              if (!trimmed.startsWith("data: ")) continue;
+              if (trimmed === "data: [DONE]") {
+                console.log(`${TAG} ✅ Completado. Tokens: ${tokenCount}`);
+                return;
+              }
+              try {
+                const json = JSON.parse(trimmed.slice(6));
+                const c = json.choices?.[0]?.delta?.content;
+                if (c) { tokenCount++; yield { type: "token", content: c }; }
+              } catch { continue; }
+            }
           }
-        } catch {
-          continue;
+          console.log(`${TAG} ✅ Completado. Tokens: ${tokenCount}`);
+        } finally {
+          reader.releaseLock();
         }
+        return;
+
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg === "API key inválida") throw new Error("API key inválida");
+        console.error(`${TAG} Error en ${model.name}: ${errMsg}`);
+        break;
       }
     }
-    console.log(`${TAG} ✅ Stream completado (done=true) con ${model.name}. Tokens: ${tokenCount}`);
-  } finally {
-    reader.releaseLock();
-  }
-}
 
+    if (i === 0) {
+      console.log(`${TAG} Pasando a fallback...`);
+      await new Promise((r) => setTimeout(r, 2000));
+    }
+  }
+
+  console.error(`${TAG} 🚨 Ambos modelos fallaron.`);
+  throw new Error("El servicio está temporalmente saturado. Intenta de nuevo en unos segundos.");
+}
 
 /* ═══════════════════════════════════════════
  * Ollama Streaming Generator (Sovereign / Local)
@@ -420,9 +308,7 @@ export async function* ollamaStreamGenerator(
     }),
   });
 
-  if (!response.ok) {
-    throw new Error(`Ollama error: ${response.status} ${response.statusText}`);
-  }
+  if (!response.ok) throw new Error(`Ollama error: ${response.status}`);
 
   const reader = response.body?.getReader();
   if (!reader) throw new Error("Ollama response body is not readable");
@@ -434,26 +320,17 @@ export async function* ollamaStreamGenerator(
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
-
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
-
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed) continue;
-
         try {
           const json = JSON.parse(trimmed);
-          if (json.message?.content) {
-            yield { type: "token", content: json.message.content };
-          }
-          if (json.done) {
-            return;
-          }
-        } catch {
-          continue;
-        }
+          if (json.message?.content) yield { type: "token", content: json.message.content };
+          if (json.done) return;
+        } catch { continue; }
       }
     }
   } finally {
@@ -465,11 +342,7 @@ export async function* ollamaStreamGenerator(
  * Demo Streaming Generator
  * ═══════════════════════════════════════════ */
 
-export async function* demoStreamGenerator(): AsyncGenerator<
-  StreamEvent,
-  void,
-  unknown
-> {
+export async function* demoStreamGenerator(): AsyncGenerator<StreamEvent, void, unknown> {
   const responses = [
     "Hola, soy Aeon IA. Estoy aquí para asistirte con cualquier consulta que tengas.",
     "Actualmente estoy en modo de demostración. Cuando se conecte el backend de IA, podré proporcionar respuestas inteligentes y contextuales.",
@@ -483,8 +356,6 @@ export async function* demoStreamGenerator(): AsyncGenerator<
 
   for (const word of words) {
     yield { type: "token", content: word + " " };
-    await new Promise((resolve) =>
-      setTimeout(resolve, 40 + Math.random() * 60)
-    );
+    await new Promise((resolve) => setTimeout(resolve, 40 + Math.random() * 60));
   }
 }
