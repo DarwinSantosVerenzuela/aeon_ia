@@ -1,10 +1,11 @@
 /**
  * Server-Sent Events streaming utilities.
- * Solo 2 modelos: Gemma 4 31B (primario) + OSS-20B (fallback)
+ * Gemma 4 (visión+general) + OSS-20B (técnico) — solo modelos :free ($0)
+ * Compresión de documentos e imágenes para reducir tokens.
  */
 
 import type { StreamEvent } from "@/types";
-import { routeToModel, AUTHORIZED_MODELS, type AIModel } from "./models";
+import { AUTHORIZED_MODELS } from "./models";
 
 /* ═══════════════════════════════════════════
  * SSE Encoder (Server → Client)
@@ -58,14 +59,11 @@ export async function* parseSSEStream(
       for (const line of lines) {
         const trimmed = line.trim();
         if (!trimmed.startsWith("data: ")) continue;
-
         try {
           const data = JSON.parse(trimmed.slice(6)) as StreamEvent;
           yield data;
           if (data.type === "done" || data.type === "error") return;
-        } catch {
-          continue;
-        }
+        } catch { continue; }
       }
     }
   } finally {
@@ -116,8 +114,33 @@ interface Attachment {
 }
 
 /* ═══════════════════════════════════════════
+ * Compresión de texto de documentos
+ * Reduce el tamaño manteniendo la información útil
+ * ═══════════════════════════════════════════ */
+
+function compressDocText(text: string, maxChars: number = 8000): string {
+  if (!text || text.length <= maxChars) return text;
+
+  // Eliminar líneas vacías múltiples
+  let compressed = text.replace(/\n{3,}/g, "\n\n");
+  // Eliminar espacios múltiples
+  compressed = compressed.replace(/ {2,}/g, " ");
+  // Eliminar tabulaciones
+  compressed = compressed.replace(/\t+/g, " ");
+
+  if (compressed.length <= maxChars) return compressed;
+
+  // Si aún es muy largo: tomar inicio + final (las partes más importantes)
+  const half = Math.floor(maxChars / 2);
+  const start = compressed.slice(0, half);
+  const end = compressed.slice(-half);
+  return `${start}\n\n[... documento truncado para optimización ...]\n\n${end}`;
+}
+
+/* ═══════════════════════════════════════════
  * OpenRouter Streaming Generator
- * Solo 2 modelos: Gemma 4 (primario) + OSS-20B (fallback)
+ * Primario: Auto Router FREE (openrouter/free)
+ * Fallback: Gemma 4 (visión) o OSS-20B (texto)
  * ═══════════════════════════════════════════ */
 
 export async function* openRouterStreamGenerator(
@@ -135,10 +158,10 @@ export async function* openRouterStreamGenerator(
   const hasAttachments = hasImages || hasDocs;
   console.log(`${TAG} hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
 
-  // Contexto de documentos
+  // Contexto de documentos (comprimido)
   const docContext = attachments
     ?.filter((a) => a.textContent && a.type !== "image")
-    .map((a) => `--- ${a.name} ---\n${a.textContent}`)
+    .map((a) => `--- ${a.name} ---\n${compressDocText(a.textContent || "")}`)
     .join("\n\n");
 
   // Construir contenido del usuario
@@ -161,110 +184,27 @@ export async function* openRouterStreamGenerator(
   } else {
     userContent = message;
   }
-  // ═══ LÓGICA SEPARADA ═══
-  // Con archivos → SOLO Gemma (3 reintentos, nunca cae a OSS-20B)
-  // Sin archivos → Router normal (Gemma o OSS-20B según contenido, con fallback)
+
+  // ═══ Cola de modelos ═══
+  // Archivos (imagen/doc) → solo Gemma (tiene visión), retry agresivo
+  // Texto → Gemma primero (general), OSS-20B fallback (técnico)
+  let modelQueue;
 
   if (hasAttachments) {
-    // ── ARCHIVOS: Solo Gemma ──
-    const gemma = AUTHORIZED_MODELS[0]; // Gemma 4
-    console.log(`${TAG} 📎 Archivos detectados → Solo ${gemma.name} (3 reintentos)`);
-
-    for (let retry = 0; retry < 3; retry++) {
-      if (retry > 0) {
-        const wait = 5000 + (retry * 3000); // 5s, 8s
-        console.log(`${TAG} Retry ${retry}/2 — esperando ${wait / 1000}s...`);
-        await new Promise((r) => setTimeout(r, wait));
-      }
-
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 45_000); // 45s para archivos grandes
-
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-            "HTTP-Referer": "https://aeon-ia.knowtech.cc",
-            "X-Title": "Aeon IA",
-          },
-          body: JSON.stringify({
-            model: gemma.id,
-            messages: [
-              { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
-              { role: "user", content: userContent },
-            ],
-            stream: true,
-            max_tokens: 2048,
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-        console.log(`${TAG} HTTP ${response.status} de ${gemma.name}`);
-
-        if (response.status === 401) throw new Error("API key inválida");
-        if (response.status === 429) {
-          console.warn(`${TAG} 429 en ${gemma.name} — reintentando...`);
-          continue;
-        }
-        if (!response.ok) {
-          const errBody = await response.text();
-          console.error(`${TAG} HTTP ${response.status}: ${errBody.slice(0, 200)}`);
-          continue;
-        }
-
-        // ✅ SUCCESS
-        console.log(`${TAG} ✅ Streaming archivo con ${gemma.name}`);
-        yield { type: "token", content: "" };
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("Response body is not readable");
-        const decoder = new TextDecoder();
-        let buffer = "";
-        let tokenCount = 0;
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split("\n");
-            buffer = lines.pop() || "";
-            for (const line of lines) {
-              const trimmed = line.trim();
-              if (!trimmed.startsWith("data: ")) continue;
-              if (trimmed === "data: [DONE]") { console.log(`${TAG} ✅ Tokens: ${tokenCount}`); return; }
-              try {
-                const json = JSON.parse(trimmed.slice(6));
-                const c = json.choices?.[0]?.delta?.content;
-                if (c) { tokenCount++; yield { type: "token", content: c }; }
-              } catch { continue; }
-            }
-          }
-          console.log(`${TAG} ✅ Tokens: ${tokenCount}`);
-        } finally { reader.releaseLock(); }
-        return;
-
-      } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
-        if (errMsg === "API key inválida") throw new Error("API key inválida");
-        console.error(`${TAG} Error: ${errMsg}`);
-        continue;
-      }
-    }
-
-    throw new Error("El modelo de visión está temporalmente saturado. Intenta de nuevo en unos segundos.");
+    // Solo modelos con visión para archivos
+    modelQueue = AUTHORIZED_MODELS.filter((m) => m.vision);
+    console.log(`${TAG} 📎 Archivos → Solo visión: ${modelQueue.map(m => m.name).join(' → ')}`);
+  } else {
+    // Todos los modelos para texto
+    modelQueue = [...AUTHORIZED_MODELS];
+    console.log(`${TAG} 💬 Texto → ${modelQueue.map(m => m.name).join(' → ')}`);
   }
 
-  // ── TEXTO: Router normal ──
-  const primaryModel = routeToModel(message);
-  const fallbackModel = AUTHORIZED_MODELS.find((m) => m.id !== primaryModel.id)!;
-  const models = [primaryModel, fallbackModel];
-  console.log(`${TAG} 💬 Texto → ${primaryModel.name} → ${fallbackModel.name}`);
 
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
+  for (let i = 0; i < modelQueue.length; i++) {
+    const model = modelQueue[i];
 
+    // Retry: 2 intentos por modelo
     for (let retry = 0; retry < 2; retry++) {
       if (retry > 0) {
         console.log(`${TAG} Retry — esperando 5s...`);
@@ -273,7 +213,9 @@ export async function* openRouterStreamGenerator(
 
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 30_000);
+        const timeoutId = setTimeout(() => controller.abort(), 35_000);
+
+        console.log(`${TAG} → ${model.name} (${model.id}) intento ${retry + 1}`);
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
           method: "POST",
@@ -301,23 +243,25 @@ export async function* openRouterStreamGenerator(
         if (response.status === 401) throw new Error("API key inválida");
         if (response.status === 429) {
           console.warn(`${TAG} 429 en ${model.name}`);
-          if (retry === 0) continue;
-          break;
+          if (retry === 0) continue; // retry mismo modelo
+          break; // siguiente modelo
         }
         if (!response.ok) {
           const errBody = await response.text();
           console.error(`${TAG} HTTP ${response.status}: ${errBody.slice(0, 200)}`);
-          break;
+          break; // siguiente modelo
         }
 
-        // ✅ SUCCESS
+        // ✅ SUCCESS — Stream tokens
         console.log(`${TAG} ✅ Streaming con ${model.name}`);
         yield { type: "token", content: "" };
+
         const reader = response.body?.getReader();
         if (!reader) throw new Error("Response body is not readable");
         const decoder = new TextDecoder();
         let buffer = "";
         let tokenCount = 0;
+
         try {
           while (true) {
             const { done, value } = await reader.read();
@@ -328,7 +272,10 @@ export async function* openRouterStreamGenerator(
             for (const line of lines) {
               const trimmed = line.trim();
               if (!trimmed.startsWith("data: ")) continue;
-              if (trimmed === "data: [DONE]") { console.log(`${TAG} ✅ Tokens: ${tokenCount}`); return; }
+              if (trimmed === "data: [DONE]") {
+                console.log(`${TAG} ✅ Tokens: ${tokenCount}`);
+                return;
+              }
               try {
                 const json = JSON.parse(trimmed.slice(6));
                 const c = json.choices?.[0]?.delta?.content;
@@ -344,11 +291,14 @@ export async function* openRouterStreamGenerator(
         const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg === "API key inválida") throw new Error("API key inválida");
         console.error(`${TAG} Error: ${errMsg}`);
-        break;
+        break; // siguiente modelo
       }
     }
 
-    if (i === 0) await new Promise((r) => setTimeout(r, 2000));
+    // Pausa antes del siguiente modelo
+    if (i < modelQueue.length - 1) {
+      await new Promise((r) => setTimeout(r, 1000));
+    }
   }
 
   throw new Error("El servicio está temporalmente saturado. Intenta de nuevo en unos segundos.");

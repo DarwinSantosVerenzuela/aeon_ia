@@ -148,11 +148,58 @@ async function readImageFile(file: File): Promise<{ text: string; previewUrl: st
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      const url = reader.result as string;
-      resolve({
-        text: `[Imagen adjunta: ${file.name}, ${formatSize(file.size)}]`,
-        previewUrl: url,
-      });
+      const originalUrl = reader.result as string;
+
+      // Comprimir imagen con Canvas para reducir tokens y evitar rate limits
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const MAX_SIZE = 1024; // Máximo 1024px de lado
+          let { width, height } = img;
+
+          // Redimensionar si es más grande que MAX_SIZE
+          if (width > MAX_SIZE || height > MAX_SIZE) {
+            if (width > height) {
+              height = Math.round(height * (MAX_SIZE / width));
+              width = MAX_SIZE;
+            } else {
+              width = Math.round(width * (MAX_SIZE / height));
+              height = MAX_SIZE;
+            }
+          }
+
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            // Fallback: enviar sin comprimir
+            resolve({ text: `[Imagen adjunta: ${file.name}, ${formatSize(file.size)}]`, previewUrl: originalUrl });
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          // JPEG calidad 0.7 — buen balance entre calidad y tamaño
+          const compressedUrl = canvas.toDataURL("image/jpeg", 0.7);
+
+          const originalKB = Math.round(originalUrl.length / 1024);
+          const compressedKB = Math.round(compressedUrl.length / 1024);
+          console.log(`[Imagen] ${file.name}: ${originalKB}KB → ${compressedKB}KB (${Math.round((1 - compressedKB / originalKB) * 100)}% reducción)`);
+
+          resolve({
+            text: `[Imagen adjunta: ${file.name}, ${formatSize(file.size)}]`,
+            previewUrl: compressedUrl,
+          });
+        } catch {
+          // Fallback: enviar sin comprimir
+          resolve({ text: `[Imagen adjunta: ${file.name}, ${formatSize(file.size)}]`, previewUrl: originalUrl });
+        }
+      };
+      img.onerror = () => {
+        // No es una imagen válida para Canvas (ej: SVG) — enviar como está
+        resolve({ text: `[Imagen adjunta: ${file.name}, ${formatSize(file.size)}]`, previewUrl: originalUrl });
+      };
+      img.src = originalUrl;
     };
     reader.onerror = () => reject(new Error("Error leyendo imagen"));
     reader.readAsDataURL(file);
