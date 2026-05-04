@@ -198,12 +198,15 @@ export async function* openRouterStreamGenerator(
     modelQueue = [...VISION_MODELS];
     console.log(`${TAG} 🖼️ CARRIL VISUAL activado. Solo Gemma: ${modelQueue.map(m => m.name).join(' → ')}`);
   } else {
-    // ── CARRIL TEXTO: Solo modelos de texto ──
-    // Gemma NO se usa para texto puro (se reserva para imágenes/docs).
+    // ── CARRIL TEXTO: Modelos de texto + Gemma como respaldo ──
+    // Prioridad: router inteligente primero, luego fallbacks, Gemma al final.
+    // Gemma se agrega como último recurso para texto (es potente razonando)
+    // pero se prioriza texto primero para no gastar su rate-limit (lo necesita para imágenes).
     const primaryModel = routeToModel(message);
     modelQueue = [
       primaryModel,
       ...TEXT_MODELS.filter((m) => m.id !== primaryModel.id),
+      VISION_MODELS[0], // Gemma 4 31B como fallback final de texto
     ];
     console.log(`${TAG} 💬 CARRIL TEXTO activado. Primario: ${primaryModel.name}. Cola: ${modelQueue.map(m => m.name).join(' → ')}`);
   }
@@ -265,31 +268,36 @@ export async function* openRouterStreamGenerator(
         const retryAfter = response.headers.get("retry-after") || "?";
         console.warn(`${TAG} ⚠ 429 Rate Limited en ${model.name}. Retry-After: ${retryAfter}s.`);
 
-        // En carril visual: esperar 5s y reintentar el MISMO modelo
+        // En carril visual: reintentar el MISMO modelo hasta 2 veces con espera de 8s
         if (hasVisualContent) {
-          console.log(`${TAG} 🔄 Carril visual — esperando 5s para reintentar ${model.name}...`);
-          await new Promise((r) => setTimeout(r, 5000));
+          for (let retry = 1; retry <= 2; retry++) {
+            console.log(`${TAG} 🔄 Carril visual — retry ${retry}/2, esperando 8s para reintentar ${model.name}...`);
+            await new Promise((r) => setTimeout(r, 8000));
 
-          const retryController = new AbortController();
-          const retryTimeout = setTimeout(() => retryController.abort(), 30_000);
-          try {
-            const retryResp = await callModel(model, userContent, retryController.signal);
-            clearTimeout(retryTimeout);
+            const retryController = new AbortController();
+            const retryTimeout = setTimeout(() => retryController.abort(), 30_000);
+            try {
+              const retryResp = await callModel(model, userContent, retryController.signal);
+              clearTimeout(retryTimeout);
 
-            if (retryResp.ok) {
-              console.log(`${TAG} ✅ Retry exitoso con ${model.name}`);
-              // Procesar stream del retry
-              const retryReader = retryResp.body?.getReader();
-              if (retryReader) {
-                yield* processStream(retryReader, model, TAG);
-                return;
+              if (retryResp.ok) {
+                console.log(`${TAG} ✅ Retry ${retry} exitoso con ${model.name}`);
+                const retryReader = retryResp.body?.getReader();
+                if (retryReader) {
+                  yield* processStream(retryReader, model, TAG);
+                  return;
+                }
+              } else if (retryResp.status === 429) {
+                console.warn(`${TAG} Retry ${retry} también 429. ${retry < 2 ? 'Intentando de nuevo...' : 'Siguiente modelo.'}`);
+                continue; // try the next retry iteration
+              } else {
+                console.warn(`${TAG} Retry ${retry} falló (HTTP ${retryResp.status}). Siguiente modelo.`);
+                break; // non-429 error, skip to next model
               }
-            } else {
-              console.warn(`${TAG} Retry falló (HTTP ${retryResp.status}). Siguiente modelo.`);
+            } catch {
+              clearTimeout(retryTimeout);
+              console.warn(`${TAG} Retry ${retry} error en ${model.name}. ${retry < 2 ? 'Intentando de nuevo...' : 'Siguiente modelo.'}`);
             }
-          } catch {
-            clearTimeout(retryTimeout);
-            console.warn(`${TAG} Retry error en ${model.name}. Siguiente modelo.`);
           }
         }
         continue;
