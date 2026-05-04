@@ -7,7 +7,7 @@
  */
 
 import type { StreamEvent } from "@/types";
-import { routeToModel, AUTHORIZED_MODELS, type AIModel } from "./models";
+import { routeToModel, VISION_MODELS, TEXT_MODELS, type AIModel } from "./models";
 
 /* ═══════════════════════════════════════════
  * SSE Encoder (Server → Client)
@@ -147,212 +147,247 @@ export async function* openRouterStreamGenerator(
 
   const TAG = "[AeonAI]";
 
-  // Check if we have images — need a vision-capable model
+  // ═══ Detectar tipo de contenido ═══
   const hasImages = attachments?.some((a) => a.type === "image" && a.imageData);
   const hasDocs = attachments?.some((a) => a.textContent && a.type !== "image");
+  const hasVisualContent = hasImages || hasDocs;
   console.log(`${TAG} Contenido: hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
 
-  // Build document context from text-based attachments
+  // ═══ Construir contexto de documentos ═══
   const docContext = attachments
     ?.filter((a) => a.textContent && a.type !== "image")
     .map((a) => `--- ${a.name} ---\n${a.textContent}`)
     .join("\n\n");
 
-  // Build the user message content (text or multimodal)
+  // ═══ Construir contenido del usuario ═══
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let userContent: any;
 
   if (hasImages) {
-    // Multimodal format for vision models
+    // Formato multimodal para modelos vision (Gemma)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parts: any[] = [];
-
-    // Add document context if present
     if (docContext) {
       parts.push({ type: "text", text: `[Documentos adjuntos]\n${docContext}\n\n` });
     }
-
-    // Add images
     for (const att of attachments || []) {
       if (att.type === "image" && att.imageData) {
-        parts.push({
-          type: "image_url",
-          image_url: { url: att.imageData },
-        });
+        parts.push({ type: "image_url", image_url: { url: att.imageData } });
         console.log(`${TAG} Imagen adjuntada: ${att.name} (~${Math.round(att.imageData.length / 1024)}KB base64)`);
       }
     }
-
-    // Add user message
     parts.push({ type: "text", text: message });
     userContent = parts;
     console.log(`${TAG} Payload multimodal: ${parts.length} partes`);
+  } else if (hasDocs) {
+    // Documentos de texto (PDF, Word, TXT) — formato texto enriquecido
+    userContent = `[Documentos adjuntos]\n${docContext}\n\n[Mensaje del usuario]\n${message}`;
   } else {
-    // Text-only format
-    userContent = docContext
-      ? `[Documentos adjuntos]\n${docContext}\n\n[Mensaje del usuario]\n${message}`
-      : message;
+    userContent = message;
   }
 
-  // Auto-selección del modelo óptimo
-  const primaryModel: AIModel = hasImages
-    ? AUTHORIZED_MODELS.find((m) => m.vision) || AUTHORIZED_MODELS[0]
-    : routeToModel(message);
+  // ═══════════════════════════════════════════
+  // SELECCIÓN DE CARRIL
+  // ═══════════════════════════════════════════
+  let modelQueue: AIModel[];
 
-  // Build fallback order
-  // SIEMPRE usamos todos los modelos para máxima resiliencia.
-  // Para imágenes: vision-capable primero, luego los demás (reciben solo el texto).
-  // Para texto/docs: modelo elegido por router primero, luego todos los demás.
-  let fallbackOrder: AIModel[];
-  if (hasImages) {
-    const visionModels = AUTHORIZED_MODELS.filter((m) => m.vision);
-    const nonVisionModels = AUTHORIZED_MODELS.filter((m) => !m.vision);
-    fallbackOrder = [...visionModels, ...nonVisionModels];
-    console.log(`${TAG} Cola imagen: ${visionModels.length} vision + ${nonVisionModels.length} texto como respaldo`);
+  if (hasVisualContent) {
+    // ── CARRIL VISUAL: Solo Gemma ──
+    // Imágenes y documentos van EXCLUSIVAMENTE por modelos Gemma con visión.
+    // NO hay fallback a modelos no-vision.
+    modelQueue = [...VISION_MODELS];
+    console.log(`${TAG} 🖼️ CARRIL VISUAL activado. Solo Gemma: ${modelQueue.map(m => m.name).join(' → ')}`);
   } else {
-    // Text/docs: primary first, then all others
-    fallbackOrder = [
+    // ── CARRIL TEXTO: Solo modelos de texto ──
+    // Gemma NO se usa para texto puro (se reserva para imágenes/docs).
+    const primaryModel = routeToModel(message);
+    modelQueue = [
       primaryModel,
-      ...AUTHORIZED_MODELS.filter((m) => m.id !== primaryModel.id),
+      ...TEXT_MODELS.filter((m) => m.id !== primaryModel.id),
     ];
+    console.log(`${TAG} 💬 CARRIL TEXTO activado. Primario: ${primaryModel.name}. Cola: ${modelQueue.map(m => m.name).join(' → ')}`);
   }
 
-  console.log(`${TAG} Pipeline iniciado. Modelos en cola: ${fallbackOrder.map(m => m.name).join(' → ')}`);
+  // ═══ Helper: hacer un request a OpenRouter ═══
+  async function callModel(model: AIModel, content: unknown, signal: AbortSignal) {
+    return fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://aeon-ia.knowtech.cc",
+        "X-Title": "Aeon IA",
+      },
+      body: JSON.stringify({
+        model: model.id,
+        messages: [
+          { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
+          { role: "user", content },
+        ],
+        stream: true,
+        max_tokens: 2048,
+      }),
+      signal,
+    });
+  }
 
-  for (let attempt = 0; attempt < fallbackOrder.length; attempt++) {
-    const model = fallbackOrder[attempt];
-    console.log(`${TAG} Intento ${attempt + 1}/${fallbackOrder.length} — Modelo: ${model.name} (${model.id})`);
+  // ═══ Iterar sobre los modelos del carril ═══
+  for (let attempt = 0; attempt < modelQueue.length; attempt++) {
+    const model = modelQueue[attempt];
+    console.log(`${TAG} Intento ${attempt + 1}/${modelQueue.length} — Modelo: ${model.name} (${model.id})`);
 
-    // Delay fijo corto entre modelos — evita saturar la API sin bloquear el servidor
+    // Delay entre intentos para no saturar
     if (attempt > 0) {
-      await new Promise((r) => setTimeout(r, 300));
+      const delay = hasVisualContent ? 5000 : 300; // 5s para vision (dar tiempo al rate limit), 300ms para texto
+      console.log(`${TAG} Esperando ${delay}ms antes del siguiente intento...`);
+      await new Promise((r) => setTimeout(r, delay));
     }
 
     try {
-      // Timeout de 25 segundos para evitar cuelgues en producción
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
-        console.warn(`${TAG} ⏱ Timeout 25s en modelo ${model.name}. Pasando al siguiente.`);
+        console.warn(`${TAG} ⏱ Timeout 30s en modelo ${model.name}.`);
         controller.abort();
-      }, 25_000);
+      }, 30_000);
 
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-          "HTTP-Referer": "https://aeon-ia.knowtech.cc",
-          "X-Title": "Aeon IA",
-        },
-        body: JSON.stringify({
-          model: model.id,
-          messages: [
-            { role: "system", content: feedbackContext ? `${SYSTEM_PROMPT}\n${feedbackContext}` : SYSTEM_PROMPT },
-            { role: "user", content: userContent },
-          ],
-          stream: true,
-          max_tokens: 2048,
-        }),
-        signal: controller.signal,
-      });
-
+      const response = await callModel(model, userContent, controller.signal);
       clearTimeout(timeoutId);
 
       console.log(`${TAG} Respuesta HTTP ${response.status} de ${model.name}`);
 
-      // Leer body del error para diagnosticar
       if (response.status === 401) {
         const errBody = await response.text();
-        console.error(`${TAG} ❌ 401 Unauthorized — API key inválida o expirada. Body: ${errBody.slice(0, 300)}`);
+        console.error(`${TAG} ❌ 401 Unauthorized. Body: ${errBody.slice(0, 300)}`);
         throw new Error("API key inválida");
       }
 
       if (response.status === 429) {
         const retryAfter = response.headers.get("retry-after") || "?";
-        console.warn(`${TAG} ⚠ 429 Rate Limited en ${model.name}. Retry-After: ${retryAfter}s. Pasando al siguiente.`);
+        console.warn(`${TAG} ⚠ 429 Rate Limited en ${model.name}. Retry-After: ${retryAfter}s.`);
+
+        // En carril visual: esperar 5s y reintentar el MISMO modelo
+        if (hasVisualContent) {
+          console.log(`${TAG} 🔄 Carril visual — esperando 5s para reintentar ${model.name}...`);
+          await new Promise((r) => setTimeout(r, 5000));
+
+          const retryController = new AbortController();
+          const retryTimeout = setTimeout(() => retryController.abort(), 30_000);
+          try {
+            const retryResp = await callModel(model, userContent, retryController.signal);
+            clearTimeout(retryTimeout);
+
+            if (retryResp.ok) {
+              console.log(`${TAG} ✅ Retry exitoso con ${model.name}`);
+              // Procesar stream del retry
+              const retryReader = retryResp.body?.getReader();
+              if (retryReader) {
+                yield* processStream(retryReader, model, TAG);
+                return;
+              }
+            } else {
+              console.warn(`${TAG} Retry falló (HTTP ${retryResp.status}). Siguiente modelo.`);
+            }
+          } catch {
+            clearTimeout(retryTimeout);
+            console.warn(`${TAG} Retry error en ${model.name}. Siguiente modelo.`);
+          }
+        }
         continue;
       }
 
       if (response.status === 404) {
-        console.warn(`${TAG} ⚠ 404 Modelo no encontrado: ${model.id}. Pasando al siguiente.`);
+        console.warn(`${TAG} ⚠ 404 Modelo no encontrado: ${model.id}.`);
         continue;
       }
 
       if (response.status >= 500) {
         const errBody = await response.text();
-        console.error(`${TAG} ❌ ${response.status} Error servidor OpenRouter en ${model.name}. Body: ${errBody.slice(0, 300)}`);
+        console.error(`${TAG} ❌ ${response.status} Error servidor en ${model.name}. Body: ${errBody.slice(0, 300)}`);
         continue;
       }
 
       if (!response.ok) {
         const errBody = await response.text();
-        console.error(`${TAG} ❌ HTTP ${response.status} inesperado en ${model.name}. Body: ${errBody.slice(0, 300)}`);
+        console.error(`${TAG} ❌ HTTP ${response.status} en ${model.name}. Body: ${errBody.slice(0, 300)}`);
         continue;
       }
 
-      // Success — start streaming (never send model identity to client)
+      // ═══ SUCCESS — Streaming ═══
       console.log(`${TAG} ✅ Streaming iniciado con ${model.name}`);
-      yield {
-        type: "token",
-        content: "",
-      } as StreamEvent;
-
-      // Stream the response
       const reader = response.body?.getReader();
       if (!reader) throw new Error("Response body is not readable");
 
-      const decoder = new TextDecoder();
-      let buffer = "";
-      let tokenCount = 0;
+      yield* processStream(reader, model, TAG);
+      return;
 
-      try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          for (const line of lines) {
-            const trimmed = line.trim();
-            if (!trimmed.startsWith("data: ")) continue;
-            if (trimmed === "data: [DONE]") {
-              console.log(`${TAG} ✅ Stream completado. Tokens emitidos: ${tokenCount}`);
-              return;
-            }
-
-            try {
-              const json = JSON.parse(trimmed.slice(6));
-              const content = json.choices?.[0]?.delta?.content;
-              if (content) {
-                tokenCount++;
-                yield { type: "token", content };
-              }
-            } catch {
-              continue;
-            }
-          }
-        }
-        console.log(`${TAG} ✅ Stream completado (done=true). Tokens emitidos: ${tokenCount}`);
-      } finally {
-        reader.releaseLock();
-      }
-
-      return; // Successfully streamed — exit
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
-      // Si es el error de API key, lanzar inmediatamente sin seguir intentando
       if (errMsg === "API key inválida") throw new Error("API key inválida");
       console.error(`${TAG} ❌ Excepción en ${model.name}: ${errMsg}`);
       continue;
     }
   }
 
-  // All models failed
-  console.error(`${TAG} 🚨 Todos los modelos fallaron. Lanzando error al usuario.`);
-  throw new Error("El servicio está temporalmente saturado. Por favor intenta de nuevo en unos segundos.");
+  // Todos los modelos del carril fallaron
+  if (hasVisualContent) {
+    console.error(`${TAG} 🚨 Todos los modelos Gemma fallaron para contenido visual.`);
+    throw new Error("Los modelos de visión están temporalmente saturados. Intenta de nuevo en unos segundos.");
+  } else {
+    console.error(`${TAG} 🚨 Todos los modelos de texto fallaron.`);
+    throw new Error("El servicio está temporalmente saturado. Por favor intenta de nuevo en unos segundos.");
+  }
 }
+
+/**
+ * Procesa el stream SSE de OpenRouter y emite tokens.
+ */
+async function* processStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  model: AIModel,
+  TAG: string
+): AsyncGenerator<StreamEvent, void, unknown> {
+  // Primer evento vacío para señalar inicio
+  yield { type: "token", content: "" };
+
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let tokenCount = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith("data: ")) continue;
+        if (trimmed === "data: [DONE]") {
+          console.log(`${TAG} ✅ Stream completado con ${model.name}. Tokens: ${tokenCount}`);
+          return;
+        }
+
+        try {
+          const json = JSON.parse(trimmed.slice(6));
+          const content = json.choices?.[0]?.delta?.content;
+          if (content) {
+            tokenCount++;
+            yield { type: "token", content };
+          }
+        } catch {
+          continue;
+        }
+      }
+    }
+    console.log(`${TAG} ✅ Stream completado (done=true) con ${model.name}. Tokens: ${tokenCount}`);
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 
 /* ═══════════════════════════════════════════
  * Ollama Streaming Generator (Sovereign / Local)
