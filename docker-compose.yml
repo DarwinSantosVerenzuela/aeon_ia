@@ -12,9 +12,12 @@ services:
       - "3009:3009"
     environment:
       - NODE_ENV=production
-      - AI_PROVIDER=${AI_PROVIDER:-openrouter}
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
-      - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}
+      - AI_PROVIDER=${AI_PROVIDER:-gemini}
+      # ── Gemini (ACTIVO) ──
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      # ── OpenRouter (INACTIVO — conservado como respaldo) ──
+      # - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      # - OPENROUTER_MODEL=${OPENROUTER_MODEL:-google/gemma-4-31b-it:free}
     networks:
       - aeon-network
       - red_knowtech
