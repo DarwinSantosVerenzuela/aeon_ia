@@ -4,7 +4,7 @@ export type MessageRole = "user" | "assistant" | "system";
 /** Attachment metadata stored with a message (lightweight, no base64) */
 export interface MessageAttachment {
   name: string;
-  type: "pdf" | "word" | "image" | "text";
+  type: "pdf" | "word" | "image" | "video" | "text";
   size: number;
   previewUrl?: string;
 }

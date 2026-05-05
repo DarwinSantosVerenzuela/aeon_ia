@@ -9,7 +9,7 @@ import { useState, useCallback, useRef } from "react";
 export interface AttachedFile {
   id: string;
   name: string;
-  type: "pdf" | "word" | "image" | "text";
+  type: "pdf" | "word" | "image" | "video" | "text";
   /** Extracted text content (for PDF, Word, text files) */
   textContent: string;
   /** Data URL for image preview */
@@ -18,7 +18,7 @@ export interface AttachedFile {
   size: number;
 }
 
-type FileType = "pdf" | "word" | "image" | "text";
+type FileType = "pdf" | "word" | "image" | "video" | "text";
 
 /* ═══════════════════════════════════════════
  * File Type Detection
@@ -43,6 +43,12 @@ function detectFileType(file: File): FileType | null {
     ["png", "jpg", "jpeg", "gif", "webp", "bmp", "svg"].includes(ext) ||
     mime.startsWith("image/")
   ) return "image";
+
+  // Videos
+  if (
+    ["mp4", "webm", "mov", "avi", "mkv", "m4v", "ogv"].includes(ext) ||
+    mime.startsWith("video/")
+  ) return "video";
 
   // Text-based
   if (
@@ -206,6 +212,21 @@ async function readImageFile(file: File): Promise<{ text: string; previewUrl: st
   });
 }
 
+async function readVideoFile(file: File): Promise<{ text: string; previewUrl: string }> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      resolve({
+        text: `[Video adjunto: ${file.name}, ${formatSize(file.size)}]`,
+        previewUrl: dataUrl,
+      });
+    };
+    reader.onerror = () => reject(new Error("Error leyendo video"));
+    reader.readAsDataURL(file);
+  });
+}
+
 function formatSize(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -216,7 +237,7 @@ function formatSize(bytes: number): string {
  * Main Hook
  * ═══════════════════════════════════════════ */
 
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB (videos pueden ser más grandes)
 
 export function useFileAttachment() {
   const [files, setFiles] = useState<AttachedFile[]>([]);
@@ -253,6 +274,12 @@ export function useFileAttachment() {
         break;
       case "image": {
         const result = await readImageFile(file);
+        textContent = result.text;
+        previewUrl = result.previewUrl;
+        break;
+      }
+      case "video": {
+        const result = await readVideoFile(file);
         textContent = result.text;
         previewUrl = result.previewUrl;
         break;
@@ -301,11 +328,13 @@ export function useFileAttachment() {
     const parts = files.map((f) => {
       const label = f.type === "image"
         ? `📷 Imagen: ${f.name}`
-        : f.type === "pdf"
-          ? `📄 PDF: ${f.name}`
-          : f.type === "word"
-            ? `📝 Word: ${f.name}`
-            : `📎 Archivo: ${f.name}`;
+        : f.type === "video"
+          ? `🎬 Video: ${f.name}`
+          : f.type === "pdf"
+            ? `📄 PDF: ${f.name}`
+            : f.type === "word"
+              ? `📝 Word: ${f.name}`
+              : `📎 Archivo: ${f.name}`;
 
       return `${label}\n${f.textContent}`;
     });

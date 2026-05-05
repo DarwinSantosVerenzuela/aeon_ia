@@ -1,15 +1,16 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect, type KeyboardEvent } from "react";
-import { Send, Square, Mic, MicOff, Plus, FileText, Image, FileSpreadsheet, X, Loader2 } from "lucide-react";
+import { Send, Square, Mic, MicOff, Plus, FileText, Image, FileSpreadsheet, Film, X, Loader2 } from "lucide-react";
 import { useSpeechRecognition } from "@/hooks/useSpeechRecognition";
 import { useFileAttachment, type AttachedFile } from "@/hooks/useFileAttachment";
 
 export interface ChatAttachment {
   name: string;
-  type: "pdf" | "word" | "image" | "text";
+  type: "pdf" | "word" | "image" | "video" | "text";
   textContent?: string;
   imageData?: string;
+  videoData?: string;
   size: number;
   previewUrl?: string;
 }
@@ -84,8 +85,9 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
       ? files.map((f) => ({
           name: f.name,
           type: f.type,
-          textContent: f.type !== "image" ? f.textContent : undefined,
+          textContent: (f.type !== "image" && f.type !== "video") ? f.textContent : undefined,
           imageData: f.type === "image" ? f.previewUrl : undefined,
+          videoData: f.type === "video" ? f.previewUrl : undefined,
           size: f.size,
           previewUrl: f.previewUrl,
         }))
@@ -128,6 +130,7 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
       case "pdf": return "📄";
       case "word": return "📝";
       case "image": return "📷";
+      case "video": return "🎬";
       default: return "📎";
     }
   };
@@ -247,6 +250,12 @@ export default function ChatInput({ onSend, onStop, isStreaming = false, disable
                 label="Imagen"
                 sub=".png, .jpg, .webp"
                 onClick={() => openFilePicker("image/*")}
+              />
+              <AttachOption
+                icon={<Film size={15} />}
+                label="Video"
+                sub=".mp4, .webm, .mov"
+                onClick={() => openFilePicker("video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov,.avi,.mkv")}
               />
               <AttachOption
                 icon={<FileText size={15} />}

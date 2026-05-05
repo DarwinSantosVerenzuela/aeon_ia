@@ -112,6 +112,7 @@ interface Attachment {
   type: string;
   textContent?: string;
   imageData?: string;
+  videoData?: string;
 }
 
 /* ═══════════════════════════════════════════
@@ -155,8 +156,9 @@ export async function* geminiStreamGenerator(
   const model = GEMINI_MODEL.id;
 
   const hasImages = attachments?.some((a) => a.type === "image" && a.imageData);
-  const hasDocs = attachments?.some((a) => a.textContent && a.type !== "image");
-  console.log(`${TAG} hasImages=${hasImages}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
+  const hasVideos = attachments?.some((a) => a.type === "video" && a.videoData);
+  const hasDocs = attachments?.some((a) => a.textContent && a.type !== "image" && a.type !== "video");
+  console.log(`${TAG} hasImages=${hasImages}, hasVideos=${hasVideos}, hasDocs=${hasDocs}, adjuntos=${attachments?.length ?? 0}`);
 
   // ── Construir el contenido del usuario ──
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -168,7 +170,7 @@ export async function* geminiStreamGenerator(
   // Adjuntar documentos como contexto textual
   if (hasDocs && attachments) {
     const docParts = attachments
-      .filter((a) => a.textContent && a.type !== "image")
+      .filter((a) => a.textContent && a.type !== "image" && a.type !== "video")
       .map((a) => `📄 ${a.name}:\n${compressDocText(a.textContent!)}`)
       .join("\n\n---\n\n");
     userText = `${docParts}\n\n---\nPregunta del usuario: ${message}`;
@@ -182,6 +184,24 @@ export async function* geminiStreamGenerator(
       if (att.type === "image" && att.imageData) {
         // imageData viene como data:image/...;base64,XXXX
         const match = att.imageData.match(/^data:(image\/[^;]+);base64,(.+)$/);
+        if (match) {
+          parts.push({
+            inlineData: {
+              mimeType: match[1],
+              data: match[2],
+            },
+          });
+        }
+      }
+    }
+  }
+
+  // Adjuntar videos como inlineData
+  if (hasVideos && attachments) {
+    for (const att of attachments) {
+      if (att.type === "video" && att.videoData) {
+        // videoData viene como data:video/...;base64,XXXX
+        const match = att.videoData.match(/^data:(video\/[^;]+);base64,(.+)$/);
         if (match) {
           parts.push({
             inlineData: {

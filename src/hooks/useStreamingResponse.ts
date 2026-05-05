@@ -20,7 +20,7 @@ export function useStreamingResponse() {
       onComplete?: (fullContent: string) => void,
       onError?: (error: string) => void,
       onModelInfo?: (modelName: string, modelSpecialty: string) => void,
-      attachments?: { name: string; type: string; textContent?: string; imageData?: string }[],
+      attachments?: { name: string; type: string; textContent?: string; imageData?: string; videoData?: string }[],
       feedbackContext?: string
     ) => {
       setIsStreaming(true);
