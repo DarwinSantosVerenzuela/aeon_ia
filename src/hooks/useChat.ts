@@ -87,7 +87,7 @@ export function useChat(externalConversationId?: string) {
   }, [messages, conversationId]);
 
   const sendMessage = useCallback(
-    async (content: string, attachments?: { name: string; type: "pdf" | "word" | "image" | "text"; textContent?: string; imageData?: string; size: number; previewUrl?: string }[], feedbackContext?: string) => {
+    async (content: string, attachments?: { name: string; type: "pdf" | "word" | "image" | "video" | "text"; textContent?: string; imageData?: string; videoData?: string; size: number; previewUrl?: string }[], feedbackContext?: string) => {
       if (!content.trim() || isStreaming || conversationId === SSR_PLACEHOLDER_ID) return;
 
       setError(null);
@@ -125,6 +125,7 @@ export function useChat(externalConversationId?: string) {
         type: a.type,
         textContent: a.textContent,
         imageData: a.imageData,
+        videoData: a.videoData,
       }));
 
       await startStream(
