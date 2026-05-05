@@ -1,8 +1,12 @@
 /**
  * Aeon IA — Model Registry
  *
- * Primario: openrouter/free (Auto Router — elige el mejor modelo free disponible)
- * Fallbacks: Gemma 4 :free (visión) + OSS-20B :free (técnico)
+ * ACTIVO: Gemini 2.5 Flash Lite (Google AI — $0, máxima velocidad)
+ *
+ * INACTIVOS (conservados como respaldo):
+ * - openrouter/free (Auto Router)
+ * - google/gemma-4-31b-it:free (Gemma 4)
+ * - openai/gpt-oss-20b:free (OSS-20B)
  */
 
 export interface AIModel {
@@ -11,15 +15,34 @@ export interface AIModel {
   specialty: string;
   description: string;
   vision?: boolean;
+  active?: boolean;
 }
 
-export const AUTHORIZED_MODELS: AIModel[] = [
+/* ═══════════════════════════════════════════
+ * MODELO ACTIVO — Gemini (Google AI Studio)
+ * ═══════════════════════════════════════════ */
+
+export const GEMINI_MODEL: AIModel = {
+  id: "gemini-2.5-flash-lite",
+  name: "Gemini Flash Lite",
+  specialty: "General & Visión",
+  description: "Modelo ultrarrápido de Google. Gratis, alta concurrencia, multimodal.",
+  vision: true,
+  active: true,
+};
+
+/* ═══════════════════════════════════════════
+ * MODELOS INACTIVOS — OpenRouter (respaldo)
+ * ═══════════════════════════════════════════ */
+
+export const INACTIVE_MODELS: AIModel[] = [
   {
     id: "openrouter/free",
     name: "Auto FREE",
     specialty: "Auto-selección",
     description: "Elige automáticamente el mejor modelo gratuito disponible. Inmediato.",
     vision: true,
+    active: false,
   },
   {
     id: "google/gemma-4-31b-it:free",
@@ -27,6 +50,7 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     specialty: "General & Visión",
     description: "Razonamiento, imágenes, documentos, código, conversación.",
     vision: true,
+    active: false,
   },
   {
     id: "openai/gpt-oss-20b:free",
@@ -34,9 +58,21 @@ export const AUTHORIZED_MODELS: AIModel[] = [
     specialty: "Técnico",
     description: "Especialista técnico. Medicina, finanzas, derecho, análisis.",
     vision: false,
+    active: false,
   },
 ];
 
+/* ═══════════════════════════════════════════
+ * Exportaciones de compatibilidad
+ * ═══════════════════════════════════════════ */
+
+/** Lista de modelos autorizados (solo activos) */
+export const AUTHORIZED_MODELS: AIModel[] = [GEMINI_MODEL];
+
 export function getModelById(id: string): AIModel | undefined {
-  return AUTHORIZED_MODELS.find((m) => m.id === id);
+  return [...AUTHORIZED_MODELS, ...INACTIVE_MODELS].find((m) => m.id === id);
+}
+
+export function getActiveModel(): AIModel {
+  return GEMINI_MODEL;
 }

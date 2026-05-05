@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIP } from "@/lib/security/rate-limit";
 import {
   createSSEStream,
   demoStreamGenerator,
+  geminiStreamGenerator,
   ollamaStreamGenerator,
   openRouterStreamGenerator,
 } from "@/lib/ai/stream";
@@ -12,13 +13,16 @@ import {
 /**
  * Resolve which AI provider to use.
  * Priority: AI_PROVIDER env → auto-detect → demo fallback.
+ * ACTIVO: gemini (Google AI Studio)
+ * INACTIVO: openrouter (conservado como fallback)
  */
-function getAIProvider(): "openrouter" | "ollama" | "demo" {
+function getAIProvider(): "gemini" | "openrouter" | "ollama" | "demo" {
   const explicit = process.env.AI_PROVIDER?.toLowerCase();
-  if (explicit === "openrouter" || explicit === "ollama" || explicit === "demo") {
+  if (explicit === "gemini" || explicit === "openrouter" || explicit === "ollama" || explicit === "demo") {
     return explicit;
   }
-  // Auto-detect: prefer OpenRouter if key exists, then Ollama, then demo
+  // Auto-detect: prefer Gemini if key exists, then OpenRouter, then Ollama, then demo
+  if (process.env.GEMINI_API_KEY) return "gemini";
   if (process.env.OPENROUTER_API_KEY) return "openrouter";
   if (process.env.OLLAMA_BASE_URL) return "ollama";
   return "demo";
@@ -27,7 +31,7 @@ function getAIProvider(): "openrouter" | "ollama" | "demo" {
 /**
  * POST /api/chat
  * Streaming chat endpoint with full validation, sanitization, and rate limiting.
- * Supports: OpenRouter (cloud), Ollama (self-hosted), Demo (testing).
+ * Supports: Gemini (Google AI), OpenRouter (cloud), Ollama (self-hosted), Demo (testing).
  */
 export async function POST(request: NextRequest) {
   try {
@@ -98,10 +102,12 @@ export async function POST(request: NextRequest) {
     const provider = getAIProvider();
 
     // ═══ DIAGNÓSTICO — ver en logs del container qué está pasando ═══
-    console.log(`[Route] Provider: ${provider} | API key presente: ${!!process.env.OPENROUTER_API_KEY} | IP: ${clientIP}`);
+    console.log(`[Route] Provider: ${provider} | Gemini key: ${!!process.env.GEMINI_API_KEY} | OpenRouter key: ${!!process.env.OPENROUTER_API_KEY} | IP: ${clientIP}`);
 
     const stream = createSSEStream(() => {
       switch (provider) {
+        case "gemini":
+          return geminiStreamGenerator(sanitizedMessage, attachments, feedbackContext);
         case "openrouter":
           return openRouterStreamGenerator(sanitizedMessage, attachments, feedbackContext);
         case "ollama":
