@@ -84,11 +84,10 @@ jobs:
           script: |
             cd /opt/aeon-ia
 
-            # Create .env from GitHub Secrets (only what's needed)
+            # Create .env from GitHub Secrets
             cat > .env << 'EOF'
             AI_PROVIDER=${{ secrets.AI_PROVIDER }}
-            OPENROUTER_API_KEY=${{ secrets.OPENROUTER_API_KEY }}
-            OPENROUTER_MODEL=${{ secrets.OPENROUTER_MODEL }}
+            GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
             EOF
 
             # Pull latest image and restart on port 3009
