@@ -64,7 +64,10 @@ export default function ChatContainer() {
 
   /* ═══ DEMO MODE: Warn before leaving ═══ */
   const messagesLenRef = useRef(0);
-  messagesLenRef.current = messages.length;
+
+  useEffect(() => {
+    messagesLenRef.current = messages.length;
+  }, [messages.length]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -168,7 +171,7 @@ export default function ChatContainer() {
           <Menu size={16} />
         </button>
 
-        {/* CENTER — glass pill: símbolo solo en móvil, wordmark en desktop */}
+        {/* LEFT — aeon logo, left-justified */}
         <div
           onClick={() => {
             if (messages.length > 0) {
@@ -184,9 +187,9 @@ export default function ChatContainer() {
             }
           }}
           style={{
-            flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
+            display: "flex", alignItems: "center", justifyContent: "flex-start",
             gap: 6, height: 36,
-            padding: "0 20px", borderRadius: 20, cursor: "pointer",
+            padding: "0 16px", borderRadius: 20, cursor: "pointer",
             background: "rgba(255,255,255,0.6)",
             backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
             border: "1px solid rgba(255,255,255,0.7)",
@@ -210,6 +213,9 @@ export default function ChatContainer() {
             draggable={false}
           />
         </div>
+
+        {/* SPACER — pushes right buttons to the edge */}
+        <div style={{ flex: 1 }} />
 
         {/* RIGHT — todas las píldoras con height: 36 uniforme */}
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
