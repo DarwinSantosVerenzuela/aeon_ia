@@ -15,6 +15,7 @@ import MessageBubble from "./MessageBubble";
 import PinnedPanel from "./PinnedPanel";
 import ReactionsPanel from "./ReactionsPanel";
 import ConversationSidebar from "./ConversationSidebar";
+import FeedbackModal from "./FeedbackModal";
 
 export default function ChatContainer() {
   const router = useRouter();
@@ -33,8 +34,10 @@ export default function ChatContainer() {
   const [showPins, setShowPins] = useState(false);
   const [showSidebar, setShowSidebar] = useState(false);
   const [showReactions, setShowReactions] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [mounted, setMounted] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const pendingExitRef = useRef<(() => void) | null>(null);
 
   // Prevent hydration mismatch — localStorage data only available on client
   useEffect(() => { setMounted(true); }, []);
@@ -139,8 +142,8 @@ export default function ChatContainer() {
         }}>
           Modo Demo
         </span>
-        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
-          — Las conversaciones no se guardan al salir
+        <span className="aeon-demo-subtitle" style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
+          — Tus interacciones ayudan a entrenar nuestro modelo de IA
         </span>
       </div>
 
@@ -163,7 +166,19 @@ export default function ChatContainer() {
 
         {/* CENTER — glass pill: símbolo solo en móvil, wordmark en desktop */}
         <div
-          onClick={() => { sessionStorage.removeItem("aeon-active-conv"); router.push("/"); }}
+          onClick={() => {
+            if (messages.length > 0) {
+              // Show feedback modal before navigating away
+              pendingExitRef.current = () => {
+                sessionStorage.removeItem("aeon-active-conv");
+                router.push("/");
+              };
+              setShowFeedback(true);
+            } else {
+              sessionStorage.removeItem("aeon-active-conv");
+              router.push("/");
+            }
+          }}
           style={{
             flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
             gap: 6, height: 36,
@@ -371,6 +386,19 @@ export default function ChatContainer() {
         dislikedMessages={dislikedMessages}
         onRemoveReaction={(id, r) => setReaction(id, r)}
         onScrollTo={scrollToMessage}
+      />
+
+      {/* ═══ FEEDBACK MODAL ═══ */}
+      <FeedbackModal
+        isOpen={showFeedback}
+        onClose={() => setShowFeedback(false)}
+        onConfirmExit={() => {
+          setShowFeedback(false);
+          if (pendingExitRef.current) {
+            pendingExitRef.current();
+            pendingExitRef.current = null;
+          }
+        }}
       />
     </div>
   );
