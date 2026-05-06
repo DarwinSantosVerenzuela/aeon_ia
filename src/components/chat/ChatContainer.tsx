@@ -63,17 +63,21 @@ export default function ChatContainer() {
   }, []); // Only on first mount
 
   /* ═══ DEMO MODE: Warn before leaving ═══ */
+  const messagesLenRef = useRef(0);
+  messagesLenRef.current = messages.length;
+
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      if (messages.length > 0) {
+      // Always show warning if user has sent at least 1 message this session
+      if (messagesLenRef.current > 0) {
         e.preventDefault();
-        // Modern browsers show a generic message, but we set returnValue for compatibility
-        e.returnValue = "";
+        e.returnValue = "⚠️ Las conversaciones se perderán al salir. ¿Estás seguro?";
+        return e.returnValue;
       }
     };
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, [messages.length]);
+  }, []); // Single persistent listener
 
   // Derive liked/disliked message lists for ReactionsPanel
   const likedMessages = messages.filter((m) => getReaction(m.id) === "up");

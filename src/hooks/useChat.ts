@@ -45,18 +45,26 @@ export function useChat(externalConversationId?: string) {
   const assistantIdRef = useRef<string>("");
   const initializedRef = useRef(false);
 
-  // Hydrate on client mount — load real conversationId and messages from storage
+  // Hydrate on client mount — DEMO MODE: always start fresh
   useEffect(() => {
     if (initializedRef.current) return;
     initializedRef.current = true;
 
-    let id = externalConversationId;
-    if (!id) {
-      const saved = sessionStorage.getItem(ACTIVE_KEY);
-      id = saved || crypto.randomUUID();
+    // DEMO MODE: wipe ALL stored messages before loading
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("aeon-messages-")) {
+        keysToRemove.push(key);
+      }
     }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem(ACTIVE_KEY);
+
+    // Always start with a fresh conversation
+    const id = externalConversationId || crypto.randomUUID();
     setConversationId(id);
-    setMessages(loadMessages(id));
+    setMessages([]); // Always empty in demo mode
     sessionStorage.setItem(ACTIVE_KEY, id);
   }, [externalConversationId]);
 

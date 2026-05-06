@@ -21,10 +21,10 @@ const STORAGE_KEY = "aeon-conversations";
 export function useConversationHistory() {
   const [conversations, setConversations] = useState<ConversationEntry[]>(() => {
     if (typeof window === "undefined") return [];
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : [];
-    } catch { return []; }
+    // DEMO MODE: Always start fresh — wipe conversation list immediately
+    // This runs BEFORE any useEffect, so it catches the data before render
+    localStorage.removeItem(STORAGE_KEY);
+    return [];
   });
 
   useEffect(() => {
