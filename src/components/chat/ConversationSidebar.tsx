@@ -97,7 +97,7 @@ export default function ConversationSidebar({
               exit={{ x: "-110%" }}
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               style={{
-                position: "fixed", top: 64, left: 12, bottom: 12,
+                position: "fixed", top: 92, left: 12, bottom: 12,
                 width: 300, zIndex: 50,
                 background: "rgba(248,248,250,0.97)",
                 backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
