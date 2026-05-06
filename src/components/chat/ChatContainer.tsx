@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageCircle, Pin, Menu, ThumbsUp } from "lucide-react";
+import { MessageCircle, Pin, Menu, ThumbsUp, FlaskConical } from "lucide-react";
 import AeonLogo from "@/components/ui/AeonLogo";
 import { useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
@@ -38,6 +38,39 @@ export default function ChatContainer() {
 
   // Prevent hydration mismatch — localStorage data only available on client
   useEffect(() => { setMounted(true); }, []);
+
+  /* ═══ DEMO MODE: Fresh start every visit ═══
+   * Clear ALL aeon-* data from localStorage on mount.
+   * Each session starts blank. No data persists between visits.
+   * Conversations are isolated per device (localStorage is per-browser).
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    // Wipe all aeon-related keys from localStorage
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith("aeon-")) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem("aeon-active-conv");
+  }, []); // Only on first mount
+
+  /* ═══ DEMO MODE: Warn before leaving ═══ */
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (messages.length > 0) {
+        e.preventDefault();
+        // Modern browsers show a generic message, but we set returnValue for compatibility
+        e.returnValue = "";
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [messages.length]);
 
   // Derive liked/disliked message lists for ReactionsPanel
   const likedMessages = messages.filter((m) => getReaction(m.id) === "up");
@@ -91,6 +124,25 @@ export default function ChatContainer() {
 
   return (
     <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", background: "#f5f5f7" }}>
+
+      {/* ═══ DEMO BANNER ═══ */}
+      <div style={{
+        flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center",
+        gap: 8, padding: "7px 16px",
+        background: "linear-gradient(135deg, #1d1d1f 0%, #2c2c2e 100%)",
+        borderBottom: "1px solid rgba(255,255,255,0.06)",
+      }}>
+        <FlaskConical size={13} color="#ffd60a" />
+        <span style={{
+          fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.85)",
+          letterSpacing: 0.3,
+        }}>
+          Modo Demo
+        </span>
+        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", fontWeight: 400 }}>
+          — Las conversaciones no se guardan al salir
+        </span>
+      </div>
 
       {/* ═══ HEADER ═══ */}
       <div style={{
